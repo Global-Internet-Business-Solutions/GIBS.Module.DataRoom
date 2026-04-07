@@ -1,0 +1,112 @@
+@using Oqtane.Modules.Controls
+@using GIBS.Module.DataRoom.Services
+@using GIBS.Module.DataRoom.Models
+
+@namespace GIBS.Module.DataRoom
+@inherits ModuleBase
+@inject IDataRoomService ClientDataRoomService
+@inject NavigationManager NavigationManager
+@inject IStringLocalizer<Edit> Localizer
+
+<form @ref="form" class="@(validated ? " was-validated" : "needs-validation" )" novalidate>
+    <div class="container">
+        <div class="row mb-1 align-items-center">
+            <Label Class="col-sm-3" For="name" HelpText="Enter a name" ResourceKey="Name">Name: </Label>
+            <div class="col-sm-9">
+                <input id="name" class="form-control" @bind="@_name" required />
+            </div>
+        </div>
+    </div>
+    <button type="button" class="btn btn-success" @onclick="Save">@Localizer["Save"]</button>
+    <NavLink class="btn btn-secondary" href="@NavigateUrl()">@Localizer["Cancel"]</NavLink>
+    <br /><br />
+    @if (PageState.Action == "Edit")
+    {
+    <AuditInfo CreatedBy="@_createdby" CreatedOn="@_createdon" ModifiedBy="@_modifiedby" ModifiedOn="@_modifiedon"></AuditInfo>
+    }
+</form>
+
+@code {
+    public override SecurityAccessLevel SecurityAccessLevel => SecurityAccessLevel.Edit;
+
+    public override string Actions => "Add,Edit";
+
+    public override string Title => "Manage DataRoom";
+
+    public override List<Resource> Resources => new List<Resource>()
+    {
+        new Stylesheet("_content/GIBS.Module.DataRoom/Module.css")
+    };
+
+    private ElementReference form;
+    private bool validated = false;
+
+    private int _id;
+    private string _name;
+    private string _createdby;
+    private DateTime _createdon;
+    private string _modifiedby;
+    private DateTime _modifiedon;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            if (PageState.Action == "Edit")
+            {
+                _id = Int32.Parse(PageState.QueryString["id"]);
+                DataRoom DataRoom = await ClientDataRoomService.GetDataRoomAsync(_id, ModuleState.ModuleId);
+                if (DataRoom != null)
+                {
+                    _name = DataRoom.Name;
+                    _createdby = DataRoom.CreatedBy;
+                    _createdon = DataRoom.CreatedOn;
+                    _modifiedby = DataRoom.ModifiedBy;
+                    _modifiedon = DataRoom.ModifiedOn;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error Loading DataRoom {DataRoomId} {Error}", _id, ex.Message);
+            AddModuleMessage(Localizer["Message.LoadError"], MessageType.Error);
+        }
+    }
+
+    private async Task Save()
+    {
+        try
+        {
+            validated = true;
+            var interop = new Oqtane.UI.Interop(JSRuntime);
+            if (await interop.FormValid(form))
+            {
+                if (PageState.Action == "Add")
+                {
+                    DataRoom DataRoom = new DataRoom();
+                    DataRoom.ModuleId = ModuleState.ModuleId;
+                    DataRoom.Name = _name;
+                    DataRoom = await ClientDataRoomService.AddDataRoomAsync(DataRoom);
+                    await logger.LogInformation("DataRoom Added {DataRoom}", DataRoom);
+                }
+                else
+                {
+                    DataRoom DataRoom = await ClientDataRoomService.GetDataRoomAsync(_id, ModuleState.ModuleId);
+                    DataRoom.Name = _name;
+                    await ClientDataRoomService.UpdateDataRoomAsync(DataRoom);
+                    await logger.LogInformation("DataRoom Updated {DataRoom}", DataRoom);
+                }
+                NavigationManager.NavigateTo(NavigateUrl());
+            }
+            else
+            {
+                AddModuleMessage(Localizer["Message.SaveValidation"], MessageType.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error Saving DataRoom {Error}", ex.Message);
+            AddModuleMessage(Localizer["Message.SaveError"], MessageType.Error);
+        }
+    }
+}

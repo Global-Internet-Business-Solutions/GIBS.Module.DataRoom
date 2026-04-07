@@ -1,0 +1,79 @@
+@using GIBS.Module.DataRoom.Services
+@using GIBS.Module.DataRoom.Models
+
+@namespace GIBS.Module.DataRoom
+@inherits ModuleBase
+@inject IDataRoomService ClientDataRoomService
+@inject NavigationManager NavigationManager
+@inject IStringLocalizer<Index> Localizer
+
+@if (_DataRooms == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <ActionLink Action="Add" Security="SecurityAccessLevel.Edit" Text="Add DataRoom" ResourceKey="Add" />
+    <br />
+    <br />
+    @if (@_DataRooms.Count != 0)
+    {
+        <Pager Items="@_DataRooms">
+            <Header>
+                <th style="width: 1px;">&nbsp;</th>
+                <th style="width: 1px;">&nbsp;</th>
+                <th>@Localizer["Name"]</th>
+            </Header>
+            <Row>
+                <td><ActionLink Action="Edit" Parameters="@($"id=" + context.DataRoomId.ToString())" ResourceKey="Edit"  /></td>
+                <td><ActionDialog Header="Delete DataRoom" Message="Are You Sure You Wish To Delete This DataRoom?" Action="Delete" Security="SecurityAccessLevel.Edit" Class="btn btn-danger" OnClick="@(async () => await Delete(context))" ResourceKey="Delete"  Id="@context.DataRoomId.ToString()" /></td>
+                <td>@context.Name</td>
+            </Row>
+        </Pager>
+    }
+    else
+    {
+        <p>@Localizer["Message.DisplayNone"]</p>
+    }
+}
+
+@code {
+    public override string RenderMode => RenderModes.Static;
+
+    public override List<Resource> Resources => new List<Resource>()
+    {
+        new Stylesheet("_content/GIBS.Module.DataRoom/Module.css"),
+        new Script("_content/GIBS.Module.DataRoom/Module.js")
+    };
+
+    List<DataRoom> _DataRooms;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _DataRooms = await ClientDataRoomService.GetDataRoomsAsync(ModuleState.ModuleId);
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error Loading DataRoom {Error}", ex.Message);
+            AddModuleMessage(Localizer["Message.LoadError"], MessageType.Error);
+        }
+    }
+
+    private async Task Delete(DataRoom DataRoom)
+    {
+        try
+        {
+            await ClientDataRoomService.DeleteDataRoomAsync(DataRoom.DataRoomId, ModuleState.ModuleId);
+            await logger.LogInformation("DataRoom Deleted {DataRoom}", DataRoom);
+            _DataRooms = await ClientDataRoomService.GetDataRoomsAsync(ModuleState.ModuleId);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error Deleting DataRoom {DataRoom} {Error}", DataRoom, ex.Message);
+            AddModuleMessage(Localizer["Message.DeleteError"], MessageType.Error);
+        }
+    }
+}

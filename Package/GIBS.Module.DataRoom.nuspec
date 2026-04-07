@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+    <metadata>
+        <id>$projectname$</id>
+        <version>1.0.0</version>
+        <authors>GIBS</authors>
+        <owners>GIBS</owners>
+        <title>DataRoom</title>
+        <description>Secured Data Room Module for Oqtane</description>
+        <copyright>GIBS</copyright>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <license type="expression">MIT</license>
+        <projectUrl>https://github.com/oqtane/oqtane.framework</projectUrl>
+        <icon>icon.png</icon>
+        <tags>oqtane module</tags>
+        <releaseNotes></releaseNotes>
+        <summary></summary>
+        <packageTypes>
+            <packageType name="Dependency" />
+            <packageType name="Oqtane.Framework" version="10.1.2" />
+        </packageTypes>
+    </metadata>
+    <files>
+        <file src="..\Client\bin\Release\$targetframework$\$ProjectName$.Client.Oqtane.dll" target="lib\$targetframework$" />
+        <file src="..\Client\bin\Release\$targetframework$\$ProjectName$.Client.Oqtane.pdb" target="lib\$targetframework$" />
+        <file src="..\Server\bin\Release\$targetframework$\$ProjectName$.Server.Oqtane.dll" target="lib\$targetframework$" />
+        <file src="..\Server\bin\Release\$targetframework$\$ProjectName$.Server.Oqtane.pdb" target="lib\$targetframework$" />
+        <file src="..\Shared\bin\Release\$targetframework$\$ProjectName$.Shared.Oqtane.dll" target="lib\$targetframework$" />
+        <file src="..\Shared\bin\Release\$targetframework$\$ProjectName$.Shared.Oqtane.pdb" target="lib\$targetframework$" />
+        <file src="..\Server\obj\Release\$targetframework$\staticwebassets\msbuild.$ProjectName$.Microsoft.AspNetCore.StaticWebAssetEndpoints.props" target="build\Microsoft.AspNetCore.StaticWebAssetEndpoints.props" />
+        <file src="..\Server\obj\Release\$targetframework$\staticwebassets\msbuild.$ProjectName$.Microsoft.AspNetCore.StaticWebAssets.props" target="build\Microsoft.AspNetCore.StaticWebAssets.props" />
+        <file src="..\Server\obj\Release\$targetframework$\staticwebassets\msbuild.build.$ProjectName$.props" target="build\$ProjectName$.props" />
+        <file src="..\Server\obj\Release\$targetframework$\staticwebassets\msbuild.buildMultiTargeting.$ProjectName$.props" target="buildMultiTargeting\$ProjectName$.props" />
+        <file src="..\Server\obj\Release\$targetframework$\staticwebassets\msbuild.buildTransitive.$ProjectName$.props" target="buildTransitive\$ProjectName$.props" />
+        <file src="..\Server\wwwroot\**\*.*" target="staticwebassets" />
+        <file src="icon.png" target="" />
+    </files>
+</package>
