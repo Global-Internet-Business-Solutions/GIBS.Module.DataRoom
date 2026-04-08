@@ -10,6 +10,7 @@ namespace GIBS.Module.DataRoom.Repository
     public class DataRoomContext : DBContextBase, ITransientService, IMultiDatabase
     {
         public virtual DbSet<Models.DataRoom> DataRoom { get; set; }
+        public virtual DbSet<Models.DataRoomActivityLog> DataRoomActivityLog { get; set; }
 
         public DataRoomContext(IDBContextDependencies DBContextDependencies) : base(DBContextDependencies)
         {
@@ -21,6 +22,7 @@ namespace GIBS.Module.DataRoom.Repository
             base.OnModelCreating(builder);
 
             builder.Entity<Models.DataRoom>().ToTable(ActiveDatabase.RewriteName("GIBSDataRoom"));
+            builder.Entity<Models.DataRoomActivityLog>().ToTable(ActiveDatabase.RewriteName("GIBSDataRoomActivityLog"));
         }
     }
 }

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <Version>1.0.0</Version>
+    <Version>1.2.1</Version>
     <Authors>GIBS</Authors>
     <Company>GIBS</Company>
     <Description>Secured Data Room Module for Oqtane</Description>
@@ -11,6 +11,10 @@
     <AssemblyName>GIBS.Module.DataRoom.Client.Oqtane</AssemblyName>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Services\DataRoomService.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.5" />

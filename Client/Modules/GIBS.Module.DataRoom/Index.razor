@@ -3,77 +3,205 @@
 
 @namespace GIBS.Module.DataRoom
 @inherits ModuleBase
-@inject IDataRoomService ClientDataRoomService
-@inject NavigationManager NavigationManager
-@inject IStringLocalizer<Index> Localizer
+@inject IDataRoomService DataRoomService
+@inject IDataRoomActivityLogService ActivityLogService
+@inject IFileService FileService
 
-@if (_DataRooms == null)
+@if (!_initialized)
 {
-    <p><em>Loading...</em></p>
+    <div class="text-center py-3">
+        <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+    </div>
+}
+else if (_dataRoom == null)
+{
+    <div class="alert alert-info">
+        <p class="mb-0">No Data Room has been configured for this module.</p>
+        @if (IsAuthorizedPermission(PermissionNames.Edit))
+        {
+            <div class="mt-2">
+                <ActionLink Action="Edit" Text="Configure Data Room" Class="btn btn-sm btn-primary" />
+            </div>
+        }
+    </div>
+}
+else if (!_dataRoom.IsActive)
+{
+    <div class="alert alert-warning mb-0">This Data Room is currently inactive.</div>
 }
 else
 {
-    <ActionLink Action="Add" Security="SecurityAccessLevel.Edit" Text="Add DataRoom" ResourceKey="Add" />
-    <br />
-    <br />
-    @if (@_DataRooms.Count != 0)
-    {
-        <Pager Items="@_DataRooms">
-            <Header>
-                <th style="width: 1px;">&nbsp;</th>
-                <th style="width: 1px;">&nbsp;</th>
-                <th>@Localizer["Name"]</th>
-            </Header>
-            <Row>
-                <td><ActionLink Action="Edit" Parameters="@($"id=" + context.DataRoomId.ToString())" ResourceKey="Edit"  /></td>
-                <td><ActionDialog Header="Delete DataRoom" Message="Are You Sure You Wish To Delete This DataRoom?" Action="Delete" Security="SecurityAccessLevel.Edit" Class="btn btn-danger" OnClick="@(async () => await Delete(context))" ResourceKey="Delete"  Id="@context.DataRoomId.ToString()" /></td>
-                <td>@context.Name</td>
-            </Row>
-        </Pager>
-    }
-    else
-    {
-        <p>@Localizer["Message.DisplayNone"]</p>
-    }
+    <div class="dataroom">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h5 class="mb-0">@_dataRoom.Name</h5>
+                @if (!string.IsNullOrEmpty(_dataRoom.Description))
+                {
+                    <small class="text-muted">@_dataRoom.Description</small>
+                }
+            </div>
+            <div class="d-flex gap-2">
+                @if (_files != null && _files.Any() && (_dataRoom.EnableDownload || IsAuthorizedPermission(PermissionNames.Edit)))
+                {
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="DownloadZipAsync"
+                            title="Download all files as a ZIP archive">
+                        <span class="oi oi-data-transfer-download me-1"></span>Download All (ZIP)
+                    </button>
+                }
+                @if (IsAuthorizedPermission(PermissionNames.Edit))
+                {
+                    <ActionLink Action="Edit" Parameters="@($"id={_dataRoom.DataRoomId}")" Class="btn btn-sm btn-outline-secondary" Text="Manage" />
+                }
+            </div>
+        </div>
+
+        @if (_files != null && _files.Any())
+        {
+            <table class="table table-hover table-sm align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Size</th>
+                        <th>Modified</th>
+                        <th class="text-end">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var file in _files)
+                    {
+                        <tr>
+                            <td>@file.Name</td>
+                            <td><span class="badge bg-light text-dark border">@file.Extension?.TrimStart('.').ToUpper()</span></td>
+                            <td class="text-nowrap">@FormatSize(file.Size)</td>
+                            <td class="text-nowrap">@UtcToLocal(file.ModifiedOn)?.ToString("g")</td>
+                            <td class="text-end">
+                                @if (_dataRoom.EnableViewOnly)
+                                {
+                                    <ActionLink Action="View" Parameters="@($"fileid={file.FileId}&dataroomid={_dataRoom.DataRoomId}")" IconName="eye" Text="View" Class="btn btn-sm btn-info text-white me-1">
+                                        
+                                    </ActionLink>
+                                }
+                                @if (_dataRoom.EnableDownload)
+                                {
+                                    <button class="btn btn-sm btn-primary"
+                                            @onclick="@(async () => await DownloadFileAsync(file.FileId, file.Name))"
+                                            title="Download @file.Name">
+                                        <span class="oi oi-cloud-download me-1"></span>Download
+                                    </button>
+                                }
+                                @if (!_dataRoom.EnableViewOnly && !_dataRoom.EnableDownload)
+                                {
+                                    <span class="text-muted small">Access Restricted</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="text-center text-muted py-5">
+                <div class="oi oi-inbox" style="font-size:2rem;"></div>
+                <p class="mt-2 mb-0">No documents available in this Data Room.</p>
+            </div>
+        }
+    </div>
 }
 
 @code {
-    public override string RenderMode => RenderModes.Static;
-
-    public override List<Resource> Resources => new List<Resource>()
+    public override List<Resource> Resources => new List<Resource>
     {
-        new Stylesheet("_content/GIBS.Module.DataRoom/Module.css"),
-        new Script("_content/GIBS.Module.DataRoom/Module.js")
+        new Stylesheet("_content/GIBS.Module.DataRoom/Module.css")
     };
 
-    List<DataRoom> _DataRooms;
+    private bool _initialized;
+    private DataRoom _dataRoom;
+    private List<Oqtane.Models.File> _files;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            _DataRooms = await ClientDataRoomService.GetDataRoomsAsync(ModuleState.ModuleId);
+            var rooms = await DataRoomService.GetDataRoomsAsync(ModuleState.ModuleId);
+            _dataRoom = rooms?.FirstOrDefault(r => r.IsActive) ?? rooms?.FirstOrDefault();
+
+            if (_dataRoom != null && _dataRoom.IsActive && _dataRoom.FolderId > 0)
+            {
+                try
+                {
+                    _files = await FileService.GetFilesAsync(_dataRoom.FolderId);
+                }
+                catch (Exception ex)
+                {
+                    await logger.LogError(ex, "Error Loading File List for Data Room (FolderId: {FolderId}) - {Error}", _dataRoom.FolderId, ex.Message);
+                    _files = new List<Oqtane.Models.File>();
+                    AddModuleMessage("Insufficient permissions to view the contents of this folder. Please contact an administrator.", MessageType.Warning);
+                }
+
+                if (PageState.User != null)
+                {
+                    await ActivityLogService.AddActivityLogAsync(new DataRoomActivityLog
+                    {
+                        DataRoomId = _dataRoom.DataRoomId, 
+                        FileId = 0,
+                        UserId = PageState.User.UserId.ToString(),
+                        Action = "View",
+                        Timestamp = DateTime.UtcNow,
+                        IPAddress = string.Empty
+                    }, ModuleState.ModuleId);
+                }
+            }
+
+            _initialized = true;
         }
         catch (Exception ex)
         {
-            await logger.LogError(ex, "Error Loading DataRoom {Error}", ex.Message);
-            AddModuleMessage(Localizer["Message.LoadError"], MessageType.Error);
+            await logger.LogError(ex, "Error Loading Data Room {Error}", ex.Message);
+            AddModuleMessage("Error loading Data Room.", MessageType.Error);
         }
     }
 
-    private async Task Delete(DataRoom DataRoom)
+    private async Task DownloadFileAsync(int fileId, string fileName)
     {
         try
         {
-            await ClientDataRoomService.DeleteDataRoomAsync(DataRoom.DataRoomId, ModuleState.ModuleId);
-            await logger.LogInformation("DataRoom Deleted {DataRoom}", DataRoom);
-            _DataRooms = await ClientDataRoomService.GetDataRoomsAsync(ModuleState.ModuleId);
-            StateHasChanged();
+            if (_dataRoom == null) return;
+
+            if (PageState.User != null)
+            {
+                await ActivityLogService.AddActivityLogAsync(new DataRoomActivityLog
+                {
+                    DataRoomId = _dataRoom.DataRoomId,
+                    FileId = fileId,
+                    UserId = PageState.User.UserId.ToString(),
+                    Action = "Download",
+                    Timestamp = DateTime.UtcNow,
+                    IPAddress = string.Empty
+                }, ModuleState.ModuleId);
+            }
+
+            // Open in new tab so the user stays on the Data Room page
+            await JSRuntime.InvokeVoidAsync("open", FileUrl(fileId, true), "_blank");
         }
         catch (Exception ex)
         {
-            await logger.LogError(ex, "Error Deleting DataRoom {DataRoom} {Error}", DataRoom, ex.Message);
-            AddModuleMessage(Localizer["Message.DeleteError"], MessageType.Error);
+            await logger.LogError(ex, "Error Downloading File {FileId} {Error}", fileId, ex.Message);
+            AddModuleMessage("Error downloading file.", MessageType.Error);
         }
+    }
+
+    private static string FormatSize(int bytes)
+    {
+        if (bytes < 1_024) return $"{bytes} B";
+        if (bytes < 1_048_576) return $"{bytes / 1024.0:F1} KB";
+        return $"{bytes / 1_048_576.0:F1} MB";
+    }
+
+    private async Task DownloadZipAsync()
+    {
+        var url = $"{PageState.Alias.BaseUrl}api/DataRoom/zip/{_dataRoom.DataRoomId}/{ModuleState.ModuleId}?authmoduleid={ModuleState.ModuleId}";
+        await JSRuntime.InvokeVoidAsync("open", url, "_blank");
     }
 }

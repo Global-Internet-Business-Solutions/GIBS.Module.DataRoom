@@ -22,15 +22,31 @@ namespace GIBS.Module.DataRoom.Migrations.EntityBuilders
 
         protected override DataRoomEntityBuilder BuildTable(ColumnsBuilder table)
         {
-            DataRoomId = AddAutoIncrementColumn(table,"DataRoomId");
-            ModuleId = AddIntegerColumn(table,"ModuleId");
-            Name = AddMaxStringColumn(table,"Name");
+            DataRoomId = AddAutoIncrementColumn(table, "DataRoomId");
+            ModuleId = AddIntegerColumn(table, "ModuleId");
+            SiteId = AddIntegerColumn(table, "SiteId");
+            Name = AddMaxStringColumn(table, "Name");
+            Description = AddMaxStringColumn(table, "Description", true);
+            FolderId = AddIntegerColumn(table, "FolderId");
+            IsActive = AddBooleanColumn(table, "IsActive");
+            NotificationEmails = AddMaxStringColumn(table, "NotificationEmails", true);
+            EnableDownload = AddBooleanColumn(table, "EnableDownload", nullable: false, defaultValue: true);
+            EnableViewOnly = AddBooleanColumn(table, "EnableViewOnly");
+            EnableWatermark = AddBooleanColumn(table, "EnableWatermark");
             AddAuditableColumns(table);
             return this;
         }
 
         public OperationBuilder<AddColumnOperation> DataRoomId { get; set; }
         public OperationBuilder<AddColumnOperation> ModuleId { get; set; }
+        public OperationBuilder<AddColumnOperation> SiteId { get; set; }
         public OperationBuilder<AddColumnOperation> Name { get; set; }
+        public OperationBuilder<AddColumnOperation> Description { get; set; }
+        public OperationBuilder<AddColumnOperation> FolderId { get; set; }
+        public OperationBuilder<AddColumnOperation> IsActive { get; set; }
+        public OperationBuilder<AddColumnOperation> NotificationEmails { get; set; }
+        public OperationBuilder<AddColumnOperation> EnableDownload { get; set; }
+        public OperationBuilder<AddColumnOperation> EnableViewOnly { get; set; }
+        public OperationBuilder<AddColumnOperation> EnableWatermark { get; set; }
     }
 }

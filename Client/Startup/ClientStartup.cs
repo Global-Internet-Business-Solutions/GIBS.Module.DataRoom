@@ -13,6 +13,11 @@ namespace GIBS.Module.DataRoom.Startup
             {
                 services.AddScoped<IDataRoomService, ClientDataRoomService>();
             }
+
+            if (!services.Any(s => s.ServiceType == typeof(IDataRoomActivityLogService)))
+            {
+                services.AddScoped<IDataRoomActivityLogService, ClientDataRoomActivityLogService>();
+            }
         }
     }
 }

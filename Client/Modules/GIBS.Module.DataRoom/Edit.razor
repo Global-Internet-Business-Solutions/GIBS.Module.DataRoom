@@ -4,109 +4,310 @@
 
 @namespace GIBS.Module.DataRoom
 @inherits ModuleBase
-@inject IDataRoomService ClientDataRoomService
+@inject IDataRoomService DataRoomService
+@inject IDataRoomActivityLogService ActivityLogService
+@inject IFolderService FolderService
 @inject NavigationManager NavigationManager
-@inject IStringLocalizer<Edit> Localizer
 
-<form @ref="form" class="@(validated ? " was-validated" : "needs-validation" )" novalidate>
-    <div class="container">
-        <div class="row mb-1 align-items-center">
-            <Label Class="col-sm-3" For="name" HelpText="Enter a name" ResourceKey="Name">Name: </Label>
-            <div class="col-sm-9">
-                <input id="name" class="form-control" @bind="@_name" required />
+<TabStrip>
+    <TabPanel Name="Settings" Heading="Room Settings" ResourceKey="Settings">
+        @if (_folders != null)
+        {
+            <div class="container-fluid px-0">
+                <div class="row mb-3 align-items-center">
+                    <Label Class="col-sm-3" For="name" HelpText="The display name of this Data Room" ResourceKey="Name">Name:</Label>
+                    <div class="col-sm-9">
+                        <input id="name" class="form-control" @bind="_name" maxlength="200" />
+                    </div>
+                </div>
+                <div class="row mb-3 align-items-center">
+                    <Label Class="col-sm-3" For="description" HelpText="Optional description shown to users" ResourceKey="Description">Description:</Label>
+                    <div class="col-sm-9">
+                        <textarea id="description" class="form-control" @bind="_description" rows="3" maxlength="2000"></textarea>
+                    </div>
+                </div>
+                <div class="row mb-3 align-items-center">
+                    <Label Class="col-sm-3" For="folder" HelpText="The Oqtane folder that holds documents for this room" ResourceKey="Folder">Folder:</Label>
+                    <div class="col-sm-9">
+                        <select id="folder" class="form-select" @bind="_folderId">
+                            <option value="0">&lt;Select a Folder&gt;</option>
+                            @foreach (var folder in _folders)
+                            {
+                                <option value="@folder.FolderId">@(new string('\u00A0', folder.Level * 4))@folder.Name</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="row mb-3 align-items-center">
+                    <Label Class="col-sm-3" For="active" HelpText="Controls whether users can access this Data Room" ResourceKey="IsActive">Active:</Label>
+                    <div class="col-sm-9">
+                        <div class="form-check form-switch">
+                            <input id="active" class="form-check-input" type="checkbox" @bind="_isActive" />
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-3 align-items-center">
+                    <Label Class="col-sm-3" For="emails" HelpText="Comma-separated email addresses notified when a document is uploaded" ResourceKey="NotificationEmails">Notify on Upload:</Label>
+                    <div class="col-sm-9">
+                        <input id="emails" class="form-control" @bind="_notificationEmails"
+                               placeholder="alice@example.com, bob@example.com" />
+                    </div>
+                </div>
+                <div class="row mb-3 align-items-center">
+                    <Label Class="col-sm-3" For="enableDownload" HelpText="Controls whether users can download files directly" ResourceKey="EnableDownload">Enable Download:</Label>
+                    <div class="col-sm-9">
+                        <div class="form-check form-switch">
+                            <input id="enableDownload" class="form-check-input" type="checkbox" @bind="_enableDownload" />
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-3 align-items-center">
+                    <Label Class="col-sm-3" For="enableViewOnly" HelpText="Controls whether users can view files in the secure document viewer" ResourceKey="EnableViewOnly">Enable View Only:</Label>
+                    <div class="col-sm-9">
+                        <div class="form-check form-switch">
+                            <input id="enableViewOnly" class="form-check-input" type="checkbox" @bind="_enableViewOnly" />
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-3 align-items-center">
+                    <Label Class="col-sm-3" For="enableWatermark" HelpText="Applies dynamically generated watermarks for users when viewing PDFs" ResourceKey="EnableWatermark">Enable Watermark:</Label>
+                    <div class="col-sm-9">
+                        <div class="form-check form-switch">
+                            <input id="enableWatermark" class="form-check-input" type="checkbox" @bind="_enableWatermark" />
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
-    <button type="button" class="btn btn-success" @onclick="Save">@Localizer["Save"]</button>
-    <NavLink class="btn btn-secondary" href="@NavigateUrl()">@Localizer["Cancel"]</NavLink>
-    <br /><br />
-    @if (PageState.Action == "Edit")
+
+            <button class="btn btn-success" @onclick="SaveAsync">Save</button>
+            <NavLink class="btn btn-secondary ms-2" href="@NavigateUrl()">Cancel</NavLink>
+            @if (_dataRoom != null)
+            {
+                <ActionDialog Header="Delete Data Room"
+                              Message="@($"Are you sure you want to permanently delete '{_dataRoom.Name}'? This will not delete any files.")"
+                              Action="Delete"
+                              Security="SecurityAccessLevel.Edit"
+                              Class="btn btn-danger ms-2"
+                              OnClick="@(async () => await DeleteAsync())"
+                              ResourceKey="Delete" />
+                <br /><br />
+                <AuditInfo CreatedBy="@_dataRoom.CreatedBy" CreatedOn="@_dataRoom.CreatedOn"
+                           ModifiedBy="@_dataRoom.ModifiedBy" ModifiedOn="@_dataRoom.ModifiedOn" />
+            }
+        }
+    </TabPanel>
+
+    @if (_dataRoom != null)
     {
-    <AuditInfo CreatedBy="@_createdby" CreatedOn="@_createdon" ModifiedBy="@_modifiedby" ModifiedOn="@_modifiedon"></AuditInfo>
+        <TabPanel Name="Documents" Heading="Documents" ResourceKey="Documents">
+            @if (_dataRoom.FolderId > 0)
+            {
+                <FileManager FolderId="@_dataRoom.FolderId"
+                             ShowFolders="false"
+                             UploadMultiple="true"
+                             ShowSuccess="true"
+                             OnUpload="HandleUploadAsync" />
+                <hr />
+                <button class="btn btn-outline-secondary btn-sm" @onclick="DownloadZipAsync">
+                    <span class="oi oi-data-transfer-download me-1"></span>Download All (ZIP)
+                </button>
+            }
+            else
+            {
+                <div class="alert alert-info">Save the room settings and select a folder first.</div>
+            }
+        </TabPanel>
+
+        <TabPanel Name="ActivityLog" Heading="Activity Log" ResourceKey="ActivityLog">
+            @if (_activityLogs != null && _activityLogs.Any())
+            {
+                <Pager Items="@_activityLogs">
+                    <Header>
+                        <th>Action</th>
+                        <th>User ID</th>
+                        <th>File ID</th>
+                        <th>Timestamp</th>
+                        <th>IP Address</th>
+                    </Header>
+                    <Row>
+                        <td><span class="badge @GetActionBadge(context.Action)">@context.Action</span></td>
+                        <td>@(string.IsNullOrEmpty(context.UserId) ? "-" : context.UserId)</td>
+                        <td>@(context.FileId > 0 ? context.FileId.ToString() : "-")</td>
+                        <td>@UtcToLocal(context.Timestamp)?.ToString("g")</td>
+                        <td>@(string.IsNullOrEmpty(context.IPAddress) ? "-" : context.IPAddress)</td>
+                    </Row>
+                </Pager>
+            }
+            else
+            {
+                <div class="text-center text-muted py-3">No activity recorded yet.</div>
+            }
+        </TabPanel>
     }
-</form>
+</TabStrip>
 
 @code {
     public override SecurityAccessLevel SecurityAccessLevel => SecurityAccessLevel.Edit;
 
     public override string Actions => "Add,Edit";
 
-    public override string Title => "Manage DataRoom";
+    public override string Title => _dataRoom == null ? "Add Data Room" : "Edit Data Room";
 
-    public override List<Resource> Resources => new List<Resource>()
+    public override List<Resource> Resources => new List<Resource>
     {
         new Stylesheet("_content/GIBS.Module.DataRoom/Module.css")
     };
 
-    private ElementReference form;
-    private bool validated = false;
+    private DataRoom _dataRoom;
+    private List<Folder> _folders;
+    private List<DataRoomActivityLog> _activityLogs;
 
-    private int _id;
-    private string _name;
-    private string _createdby;
-    private DateTime _createdon;
-    private string _modifiedby;
-    private DateTime _modifiedon;
+    private string _name = string.Empty;
+    private string _description = string.Empty;
+    private int _folderId;
+    private bool _isActive = true;
+    private string _notificationEmails = string.Empty;
+    private bool _enableDownload = true;
+    private bool _enableViewOnly = true;
+    private bool _enableWatermark = false;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            if (PageState.Action == "Edit")
+            _folders = await FolderService.GetFoldersAsync(ModuleState.SiteId);
+
+            if (PageState.QueryString.ContainsKey("id") && int.TryParse(PageState.QueryString["id"], out int id))
             {
-                _id = Int32.Parse(PageState.QueryString["id"]);
-                DataRoom DataRoom = await ClientDataRoomService.GetDataRoomAsync(_id, ModuleState.ModuleId);
-                if (DataRoom != null)
-                {
-                    _name = DataRoom.Name;
-                    _createdby = DataRoom.CreatedBy;
-                    _createdon = DataRoom.CreatedOn;
-                    _modifiedby = DataRoom.ModifiedBy;
-                    _modifiedon = DataRoom.ModifiedOn;
-                }
+                _dataRoom = await DataRoomService.GetDataRoomAsync(id, ModuleState.ModuleId);
+            }
+
+            if (_dataRoom != null)
+            {
+                _name = _dataRoom.Name;
+                _description = _dataRoom.Description ?? string.Empty;
+                _folderId = _dataRoom.FolderId;
+                _isActive = _dataRoom.IsActive;
+                _notificationEmails = _dataRoom.NotificationEmails ?? string.Empty;
+                _enableDownload = _dataRoom.EnableDownload;
+                _enableViewOnly = _dataRoom.EnableViewOnly;
+                _enableWatermark = _dataRoom.EnableWatermark;
+                _activityLogs = await ActivityLogService.GetActivityLogsAsync(_dataRoom.DataRoomId, ModuleState.ModuleId);
             }
         }
         catch (Exception ex)
         {
-            await logger.LogError(ex, "Error Loading DataRoom {DataRoomId} {Error}", _id, ex.Message);
-            AddModuleMessage(Localizer["Message.LoadError"], MessageType.Error);
+            await logger.LogError(ex, "Error Loading Data Room Settings {Error}", ex.Message);
+            AddModuleMessage("Error loading Data Room settings.", MessageType.Error);
         }
     }
 
-    private async Task Save()
+    private async Task SaveAsync()
     {
         try
         {
-            validated = true;
-            var interop = new Oqtane.UI.Interop(JSRuntime);
-            if (await interop.FormValid(form))
+            if (string.IsNullOrWhiteSpace(_name))
             {
-                if (PageState.Action == "Add")
+                AddModuleMessage("Name is required.", MessageType.Warning);
+                return;
+            }
+            if (_folderId == 0)
+            {
+                AddModuleMessage("Please select a folder.", MessageType.Warning);
+                return;
+            }
+
+            if (_dataRoom == null)
+            {
+                var room = new DataRoom
                 {
-                    DataRoom DataRoom = new DataRoom();
-                    DataRoom.ModuleId = ModuleState.ModuleId;
-                    DataRoom.Name = _name;
-                    DataRoom = await ClientDataRoomService.AddDataRoomAsync(DataRoom);
-                    await logger.LogInformation("DataRoom Added {DataRoom}", DataRoom);
-                }
-                else
-                {
-                    DataRoom DataRoom = await ClientDataRoomService.GetDataRoomAsync(_id, ModuleState.ModuleId);
-                    DataRoom.Name = _name;
-                    await ClientDataRoomService.UpdateDataRoomAsync(DataRoom);
-                    await logger.LogInformation("DataRoom Updated {DataRoom}", DataRoom);
-                }
-                NavigationManager.NavigateTo(NavigateUrl());
+                    ModuleId = ModuleState.ModuleId,
+                    SiteId = ModuleState.SiteId,
+                    Name = _name,
+                    Description = _description,
+                    FolderId = _folderId,
+                    IsActive = _isActive,
+                    NotificationEmails = _notificationEmails,
+                    EnableDownload = _enableDownload,
+                    EnableViewOnly = _enableViewOnly,
+                    EnableWatermark = _enableWatermark
+                };
+                _dataRoom = await DataRoomService.AddDataRoomAsync(room);
+                await logger.LogInformation("Data Room Created {DataRoomId}", _dataRoom.DataRoomId);
             }
             else
             {
-                AddModuleMessage(Localizer["Message.SaveValidation"], MessageType.Warning);
+                _dataRoom.Name = _name;
+                _dataRoom.Description = _description;
+                _dataRoom.FolderId = _folderId;
+                _dataRoom.IsActive = _isActive;
+                _dataRoom.NotificationEmails = _notificationEmails;
+                _dataRoom.EnableDownload = _enableDownload;
+                _dataRoom.EnableViewOnly = _enableViewOnly;
+                _dataRoom.EnableWatermark = _enableWatermark;
+                _dataRoom = await DataRoomService.UpdateDataRoomAsync(_dataRoom);
+                await logger.LogInformation("Data Room Updated {DataRoomId}", _dataRoom.DataRoomId);
             }
+
+            NavigationManager.NavigateTo(NavigateUrl());
         }
         catch (Exception ex)
         {
-            await logger.LogError(ex, "Error Saving DataRoom {Error}", ex.Message);
-            AddModuleMessage(Localizer["Message.SaveError"], MessageType.Error);
+            await logger.LogError(ex, "Error Saving Data Room {Error}", ex.Message);
+            AddModuleMessage("Error saving Data Room.", MessageType.Error);
         }
     }
+
+    private async Task DeleteAsync()
+    {
+        try
+        {
+            await DataRoomService.DeleteDataRoomAsync(_dataRoom.DataRoomId, ModuleState.ModuleId);
+            await logger.LogInformation("Data Room Deleted {DataRoomId}", _dataRoom.DataRoomId);
+            NavigationManager.NavigateTo(NavigateUrl());
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error Deleting Data Room {DataRoomId} {Error}", _dataRoom.DataRoomId, ex.Message);
+            AddModuleMessage("Error deleting Data Room.", MessageType.Error);
+        }
+    }
+
+    private async Task HandleUploadAsync(int fileId)
+    {
+        try
+        {
+            await ActivityLogService.AddActivityLogAsync(new DataRoomActivityLog
+            {
+                DataRoomId = _dataRoom.DataRoomId,
+                FileId = fileId,
+                UserId = PageState.User?.UserId.ToString() ?? string.Empty,
+                Action = "Upload",
+                Timestamp = DateTime.UtcNow,
+                IPAddress = string.Empty
+            }, ModuleState.ModuleId);
+
+            // Refresh log tab
+            _activityLogs = await ActivityLogService.GetActivityLogsAsync(_dataRoom.DataRoomId, ModuleState.ModuleId);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error Logging Upload {FileId} {Error}", fileId, ex.Message);
+        }
+    }
+
+    private async Task DownloadZipAsync()
+    {
+        var url = $"{PageState.Alias.BaseUrl}api/DataRoom/zip/{_dataRoom.DataRoomId}/{ModuleState.ModuleId}?authmoduleid={ModuleState.ModuleId}";
+        await JSRuntime.InvokeVoidAsync("open", url, "_blank");
+    }
+
+    private static string GetActionBadge(string action) => action switch
+    {
+        "Download" => "bg-primary",
+        "Upload"   => "bg-success",
+        "View"     => "bg-secondary",
+        _          => "bg-light text-dark border"
+    };
 }

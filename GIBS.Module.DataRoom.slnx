@@ -10,4 +10,30 @@
   <Project Path="Package\GIBS.Module.DataRoom.Package.csproj" />
   <Project Path="Server\GIBS.Module.DataRoom.Server.csproj" />
   <Project Path="Shared\GIBS.Module.DataRoom.Shared.csproj" />
+  <Folder Name="/docs/governance/">
+    <File Path="../oqtane-ai-playbook/module-playbook-example/docs/governance/027-rules-index.md" />
+    <File Path="../oqtane-ai-playbook/module-playbook-example/docs/governance/027x-ai-decision-timeline.md" />
+    <File Path="../oqtane-ai-playbook/module-playbook-example/docs/governance/027x-ai-instruction-discovery.md" />
+    <File Path="../oqtane-ai-playbook/module-playbook-example/docs/governance/027x-authorization.md" />
+    <File Path="../oqtane-ai-playbook/module-playbook-example/docs/governance/027x-canonical-framework.md" />
+    <File Path="../oqtane-ai-playbook/module-playbook-example/docs/governance/027x-canonical-validation.md" />
+    <File Path="../oqtane-ai-playbook/module-playbook-example/docs/governance/027x-core-ai-behavior.md" />
+    <File Path="../oqtane-ai-playbook/module-playbook-example/docs/governance/027x-error-handling.md" />
+    <File Path="../oqtane-ai-playbook/module-playbook-example/docs/governance/027x-localization.md" />
+    <File Path="../oqtane-ai-playbook/module-playbook-example/docs/governance/027x-migrations.md" />
+    <File Path="../oqtane-ai-playbook/module-playbook-example/docs/governance/027x-packaging-and-dependencies.md" />
+    <File Path="../oqtane-ai-playbook/module-playbook-example/docs/governance/027x-repositories.md" />
+    <File Path="../oqtane-ai-playbook/module-playbook-example/docs/governance/027x-scheduled-jobs.md" />
+    <File Path="../oqtane-ai-playbook/module-playbook-example/docs/governance/027x-startup.md" />
+    <File Path="../oqtane-ai-playbook/module-playbook-example/docs/governance/027x-structure-and-boundaries.md" />
+    <File Path="../oqtane-ai-playbook/module-playbook-example/docs/governance/027x-ui-construction.md" />
+    <File Path="../oqtane-ai-playbook/module-playbook-example/docs/governance/027x-ui-mudblazor.md" />
+    <File Path="../oqtane-ai-playbook/module-playbook-example/docs/governance/027x-ui-Radzen.md" />
+    <File Path="../oqtane-ai-playbook/module-playbook-example/docs/governance/027x-ui-validation.md" />
+    <File Path="../oqtane-ai-playbook/module-playbook-example/docs/governance/README.md" />
+  </Folder>
+  <Folder Name="/docs/">
+    <File Path="docs/deviations.md" />
+    <File Path="docs/ai-decision-timeline.md" />
+  </Folder>
 </Solution>

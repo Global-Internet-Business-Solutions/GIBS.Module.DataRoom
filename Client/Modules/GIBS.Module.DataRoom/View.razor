@@ -1,0 +1,228 @@
+@using GIBS.Module.DataRoom.Services
+@using GIBS.Module.DataRoom.Models
+
+@namespace GIBS.Module.DataRoom
+@inherits ModuleBase
+@inject IDataRoomService DataRoomService
+@inject IFileService FileService
+@inject NavigationManager NavigationManager
+
+@if (!_initialized)
+{
+    <div class="text-center py-4">
+        <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+    </div>
+}
+else if (_error != null)
+{
+    <div class="alert alert-danger">@_error</div>
+}
+else
+{
+    <div class="dataroom-viewer-container">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <NavLink href="@NavigateUrl()" class="btn btn-sm btn-outline-secondary">
+                <span class="oi oi-arrow-left me-1"></span>Back to Data Room
+            </NavLink>
+            <span class="text-muted small text-truncate" style="max-width:60%;">@_file?.Name</span>
+            @if (_dataRoom?.EnableViewOnly == true && _dataRoom?.EnableDownload == false)
+            {
+                <span class="badge bg-danger ms-auto">
+                    <span class="oi oi-lock-locked me-1"></span>View Only
+                </span>
+            }
+            else
+            {
+                <span class="ms-auto"></span>
+            }
+            @if (_dataRoom?.EnableDownload == true && _file != null)
+            {
+                <button class="btn btn-sm btn-primary ms-2"
+                        @onclick="DownloadFileAsync"
+                        title="Download @_file.Name">
+                    <span class="oi oi-cloud-download me-1"></span>Download
+                </button>
+            }
+        </div>
+
+        @if (_isPdf)
+        {
+            <div style="position:relative; width:100%; height:82vh;">
+                <iframe src="@_viewerSrc"
+                        class="dataroom-viewer"
+                        title="@_file?.Name"
+                        style="width:100%; height:82vh; border:none; display:block;">
+                </iframe>
+                @if (!string.IsNullOrEmpty(_watermarkText))
+                {
+                    <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; overflow:hidden; z-index:10;">
+                        <div style="transform:rotate(-35deg); color:rgba(180,0,0,.18); font-size:clamp(14px,2.4vw,28px); font-weight:bold; white-space:pre-line; text-align:center; line-height:1.8; letter-spacing:.04em;">@_watermarkText</div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <!-- Non-PDF inline view (images, text) -->
+            <iframe srcdoc="@_inlineSrcdoc"
+                    class="dataroom-viewer"
+                    title="@_file?.Name"
+                    sandbox="allow-scripts allow-same-origin"
+                    style="width:100%; height:82vh; border:none; display:block;">
+            </iframe>
+        }
+    </div>
+}
+
+@code {
+    public override SecurityAccessLevel SecurityAccessLevel => SecurityAccessLevel.View;
+    public override string Actions => "View";
+    public override string Title => _file != null ? $"View: {_file.Name}" : "View Document";
+
+    // public override List<Resource> Resources => new List<Resource>
+    // {
+    //     new Stylesheet("_content/GIBS.Module.DataRoom/Module.css"),
+    //     new Script("/Modules/GIBS.Module.DataRoom/Module.js?v=3")
+    // };
+
+    public override List<Resource> Resources => new List<Resource>()
+    {
+        new Resource { ResourceType = ResourceType.Stylesheet, Url = "_content/GIBS.Module.DataRoom/css/default.css?v=1.0.6" }
+    };
+
+    private bool _initialized;
+    private string _error;
+    private DataRoom _dataRoom;
+    private Oqtane.Models.File _file;
+    private bool _isPdf;
+    private string _viewerSrc;
+    private string _inlineSrcdoc;
+    private string _watermarkText;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            if (!PageState.QueryString.ContainsKey("fileid") ||
+                !int.TryParse(PageState.QueryString["fileid"], out int fileId) ||
+                !PageState.QueryString.ContainsKey("dataroomid") ||
+                !int.TryParse(PageState.QueryString["dataroomid"], out int dataRoomId))
+            {
+                _error = "Missing document reference.";
+                _initialized = true;
+                return;
+            }
+
+            // Resolve the data room
+            var rooms = await DataRoomService.GetDataRoomsAsync(ModuleState.ModuleId);
+            _dataRoom = rooms?.FirstOrDefault(r => r.DataRoomId == dataRoomId);
+            if (_dataRoom == null)
+            {
+                _error = "Data Room not found.";
+                _initialized = true;
+                return;
+            }
+
+            if (!_dataRoom.EnableViewOnly)
+            {
+                _error = "View Only access is not enabled for this Data Room.";
+                _initialized = true;
+                return;
+            }
+
+            // Resolve the file metadata
+            _file = await FileService.GetFileAsync(fileId);
+            if (_file == null || _file.FolderId != _dataRoom.FolderId)
+            {
+                _error = "Document not found or access denied.";
+                _initialized = true;
+                return;
+            }
+
+            _isPdf = _file.Extension?.TrimStart('.').Equals("pdf", StringComparison.OrdinalIgnoreCase) == true || _file.Name?.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) == true;
+
+            var safeInlineExtensions = new[] { "png", "jpg", "jpeg", "gif", "txt" };
+            var extObj = _file.Extension?.TrimStart('.').ToLower() ?? string.Empty;
+            var isSafeInline = safeInlineExtensions.Contains(extObj);
+
+            if (!_isPdf && !isSafeInline)
+            {
+                _error = "This document type cannot be natively displayed inline in the secure viewer. It requires downloading, which must be explicitly allowed by the Data Room settings.";
+                _initialized = true;
+                return;
+            }
+            //PageState.ModuleId
+            // Secure file API endpoints
+            var viewModuleId = _dataRoom.ModuleId;
+            var viewApiBase = $"{PageState.Alias.BaseUrl}api/DataRoom/view/{fileId}/{dataRoomId}/{viewModuleId}?authmoduleid={viewModuleId}";
+            var relativeApiBase = viewApiBase;
+
+            // Build watermark text: DisplayName + date; newline-separated for multi-line canvas render
+            var wm = string.Empty;
+            if (_dataRoom.EnableWatermark && PageState.User != null)
+            {
+                wm = $"{PageState.User.DisplayName}\n{DateTime.Now:MM-dd-yyyy HH:mm}";
+            }
+            _watermarkText = wm;
+
+            if (_isPdf)
+            {
+                _viewerSrc = viewApiBase + "#toolbar=0&navpanes=0&scrollbar=0";
+                _initialized = true;
+                return;
+            }
+
+            var isImage = new[] { "png", "jpg", "jpeg", "gif" }.Contains(extObj);
+            var contentHtml = isImage
+                ? $"<img src=\"{relativeApiBase}\" oncontextmenu=\"return false;\" ondragstart=\"return false;\" />"
+                : $"<iframe src=\"{relativeApiBase}\" style=\"width:100%;height:100%;border:none;background:white;\"></iframe>";
+
+            _inlineSrcdoc = $@"<!DOCTYPE html>
+<html lang=""en"">
+<head>
+    <meta charset=""UTF-8"" />
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"" />
+    <title>Viewer</title>
+    <style>
+        @media print {{ body {{ display: none !important; }} }}
+        *, *::before, *::after {{ box-sizing: border-box; }}
+        html, body {{ margin: 0; padding: 0; height: 100%; }}
+        body {{ background: #525659; display: flex; align-items: center; justify-content: center; user-select: none; -webkit-user-select: none; overflow: hidden; }}
+        img {{ max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 0 4px 16px rgba(0,0,0,.5); }}
+        .wm-overlay {{ position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; overflow: hidden; z-index: 10; }}
+        .wm-text {{ transform: rotate(-35deg); color: rgba(180, 0, 0, .18); font-size: clamp(14px, 2.4vw, 28px); font-weight: bold; white-space: pre-line; text-align: center; line-height: 1.5; letter-spacing: .04em; }}
+    </style>
+</head>
+<body oncontextmenu=""return false;"">
+    {contentHtml}
+    {(string.IsNullOrEmpty(wm) ? "" : $"<div class=\"wm-overlay\"><div class=\"wm-text\">{wm.Replace("\n", "<br/>")}</div></div>")}
+    <script>
+        document.addEventListener('contextmenu', e => e.preventDefault());
+        document.addEventListener('dragstart',   e => e.preventDefault());
+        document.addEventListener('keydown', e => {{
+            const k = e.key.toLowerCase();
+            if ((e.ctrlKey || e.metaKey) && ['s','p','u','a','c'].includes(k)) e.preventDefault();
+        }});
+    </script>
+</body>
+</html>";
+
+            _initialized = true;
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error Initialising Document Viewer {Error}", ex.Message);
+            _error = "An error occurred loading the document.";
+            _initialized = true;
+        }
+    }
+
+    private async Task DownloadFileAsync()
+    {
+        if (_file == null || _dataRoom == null) return;
+
+        // Use the secure download API endpoint which logs the download
+        var downloadUrl = $"{PageState.Alias.BaseUrl}api/DataRoom/download/{_file.FileId}/{_dataRoom.DataRoomId}/{_dataRoom.ModuleId}?authmoduleid={_dataRoom.ModuleId}";
+        await JSRuntime.InvokeVoidAsync("open", downloadUrl, "_blank");
+    }
+}

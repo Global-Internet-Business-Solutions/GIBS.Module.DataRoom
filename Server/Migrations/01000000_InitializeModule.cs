@@ -17,14 +17,21 @@ namespace GIBS.Module.DataRoom.Migrations
 
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            var entityBuilder = new DataRoomEntityBuilder(migrationBuilder, ActiveDatabase);
-            entityBuilder.Create();
+            var dataRoomBuilder = new DataRoomEntityBuilder(migrationBuilder, ActiveDatabase);
+            dataRoomBuilder.Create();
+
+            var activityLogBuilder = new DataRoomActivityLogEntityBuilder(migrationBuilder, ActiveDatabase);
+            activityLogBuilder.Create();
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            var entityBuilder = new DataRoomEntityBuilder(migrationBuilder, ActiveDatabase);
-            entityBuilder.Drop();
+            // Drop activity log first to satisfy FK constraint
+            var activityLogBuilder = new DataRoomActivityLogEntityBuilder(migrationBuilder, ActiveDatabase);
+            activityLogBuilder.Drop();
+
+            var dataRoomBuilder = new DataRoomEntityBuilder(migrationBuilder, ActiveDatabase);
+            dataRoomBuilder.Drop();
         }
     }
 }

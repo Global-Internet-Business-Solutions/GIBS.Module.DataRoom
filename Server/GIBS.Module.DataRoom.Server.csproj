@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
-    <Version>1.0.0</Version>
+    <Version>1.2.1</Version>
     <Product>GIBS.Module.DataRoom</Product>
     <Authors>GIBS</Authors>
     <Company>GIBS</Company>
@@ -17,6 +17,10 @@
   <ItemGroup>
     <Content Remove="wwwroot\_content\**\*.*" />
     <None Include="wwwroot\_content\**\*.*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Services\DataRoomService.cs" />
   </ItemGroup>
 
   <ItemGroup>
