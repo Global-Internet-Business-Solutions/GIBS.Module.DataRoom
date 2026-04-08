@@ -7,6 +7,8 @@
 @inject IDataRoomService DataRoomService
 @inject IDataRoomActivityLogService ActivityLogService
 @inject IFolderService FolderService
+@inject IFileService FileService
+@inject IUserService UserService
 @inject NavigationManager NavigationManager
 
 <TabStrip>
@@ -121,18 +123,20 @@
         <TabPanel Name="ActivityLog" Heading="Activity Log" ResourceKey="ActivityLog">
             @if (_activityLogs != null && _activityLogs.Any())
             {
-                <Pager Items="@_activityLogs">
+                <Pager Items="@_activityLogs" SearchProperties="UserId">
                     <Header>
                         <th>Action</th>
                         <th>User ID</th>
-                        <th>File ID</th>
+                        <th>DisplayName</th>
+                        <th>File</th>
                         <th>Timestamp</th>
                         <th>IP Address</th>
                     </Header>
                     <Row>
                         <td><span class="badge @GetActionBadge(context.Action)">@context.Action</span></td>
                         <td>@(string.IsNullOrEmpty(context.UserId) ? "-" : context.UserId)</td>
-                        <td>@(context.FileId > 0 ? context.FileId.ToString() : "-")</td>
+                        <td>@GetUserDisplay(context.UserId)</td>
+                        <td>@GetFileName(context.FileId)</td>
                         <td>@UtcToLocal(context.Timestamp)?.ToString("g")</td>
                         <td>@(string.IsNullOrEmpty(context.IPAddress) ? "-" : context.IPAddress)</td>
                     </Row>
@@ -148,6 +152,7 @@
 
 @code {
     public override SecurityAccessLevel SecurityAccessLevel => SecurityAccessLevel.Edit;
+    public override bool UseAdminContainer => false;
 
     public override string Actions => "Add,Edit";
 
@@ -161,6 +166,8 @@
     private DataRoom _dataRoom;
     private List<Folder> _folders;
     private List<DataRoomActivityLog> _activityLogs;
+    private Dictionary<int, string> _fileNames = new();
+    private Dictionary<string, string> _userDisplayNames = new(StringComparer.OrdinalIgnoreCase);
 
     private string _name = string.Empty;
     private string _description = string.Empty;
@@ -193,6 +200,8 @@
                 _enableViewOnly = _dataRoom.EnableViewOnly;
                 _enableWatermark = _dataRoom.EnableWatermark;
                 _activityLogs = await ActivityLogService.GetActivityLogsAsync(_dataRoom.DataRoomId, ModuleState.ModuleId);
+                await LoadFileNamesAsync();
+                await LoadUserDisplayNamesAsync();
             }
         }
         catch (Exception ex)
@@ -289,6 +298,8 @@
 
             // Refresh log tab
             _activityLogs = await ActivityLogService.GetActivityLogsAsync(_dataRoom.DataRoomId, ModuleState.ModuleId);
+            await LoadFileNamesAsync();
+            await LoadUserDisplayNamesAsync();
             StateHasChanged();
         }
         catch (Exception ex)
@@ -301,6 +312,88 @@
     {
         var url = $"{PageState.Alias.BaseUrl}api/DataRoom/zip/{_dataRoom.DataRoomId}/{ModuleState.ModuleId}?authmoduleid={ModuleState.ModuleId}";
         await JSRuntime.InvokeVoidAsync("open", url, "_blank");
+    }
+
+    private async Task LoadFileNamesAsync()
+    {
+        _fileNames.Clear();
+
+        if (_dataRoom == null || _dataRoom.FolderId <= 0)
+        {
+            return;
+        }
+
+        var files = await FileService.GetFilesAsync(_dataRoom.FolderId);
+        if (files == null)
+        {
+            return;
+        }
+
+        foreach (var file in files)
+        {
+            _fileNames[file.FileId] = file.Name;
+        }
+    }
+
+    private async Task LoadUserDisplayNamesAsync()
+    {
+        _userDisplayNames.Clear();
+
+        if (_activityLogs == null || !_activityLogs.Any())
+        {
+            return;
+        }
+
+        var userIds = _activityLogs
+            .Select(l => l.UserId)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        foreach (var userId in userIds)
+        {
+            if (!int.TryParse(userId, out var numericUserId))
+            {
+                _userDisplayNames[userId] = userId;
+                continue;
+            }
+
+            try
+            {
+                var user = await UserService.GetUserAsync(numericUserId, ModuleState.SiteId);
+                _userDisplayNames[userId] = !string.IsNullOrWhiteSpace(user?.DisplayName)
+                    ? user.DisplayName
+                    : userId;
+            }
+            catch
+            {
+                _userDisplayNames[userId] = userId;
+            }
+        }
+    }
+
+    private string GetFileName(int fileId)
+    {
+        if (fileId <= 0)
+        {
+            return "-";
+        }
+
+        return _fileNames.TryGetValue(fileId, out var fileName) && !string.IsNullOrWhiteSpace(fileName)
+            ? fileName
+            : $"#{fileId}";
+    }
+
+    private string GetUserDisplay(string userId)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return "-";
+        }
+
+        return _userDisplayNames.TryGetValue(userId, out var displayName) && !string.IsNullOrWhiteSpace(displayName)
+            ? displayName
+            : userId;
     }
 
     private static string GetActionBadge(string action) => action switch

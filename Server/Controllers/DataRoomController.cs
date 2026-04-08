@@ -15,6 +15,7 @@ using GIBS.Module.DataRoom.Models;
 using GIBS.Module.DataRoom.Services;
 using System.Net;
 using System.Linq;
+using Oqtane.Extensions;
 
 namespace GIBS.Module.DataRoom.Controllers
 {
@@ -157,7 +158,8 @@ namespace GIBS.Module.DataRoom.Controllers
             {
                 DataRoomId = dataRoomId,
                 FileId = fileId,
-                UserId = User.Identity?.Name ?? string.Empty,
+                // UserId = User.Identity?.Name ?? string.Empty,
+                UserId = User.UserId().ToString(),
                 Action = "Download",
                 Timestamp = DateTime.UtcNow,
                 IPAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty
@@ -231,7 +233,7 @@ namespace GIBS.Module.DataRoom.Controllers
             {
                 DataRoomId = dataRoomId,
                 FileId = fileId,
-                UserId = User.Identity?.Name ?? string.Empty,
+                UserId = User.UserId().ToString(),
                 Action = "View",
                 Timestamp = DateTime.UtcNow,
                 IPAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty
