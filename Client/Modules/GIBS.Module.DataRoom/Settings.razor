@@ -3,13 +3,19 @@
 @implements Oqtane.Interfaces.ISettingsControl
 @inject ISettingService SettingService
 @inject IStringLocalizer<Settings> Localizer
+@inject IRoleService RoleService
 
 <div class="container">
     <div class="row mb-1 align-items-center">
-        <Label Class="col-sm-3" For="value" HelpText="Enter a value" ResourceKey="SettingName" ResourceType="@resourceType">Name: </Label>
-            <div class="col-sm-9">
-                <input id="value" type="text" class="form-control" @bind="@_value" />
-            </div>
+        <label class="col-sm-3" for="createRole">Create Role</label>
+        <div class="col-sm-9">
+            <select id="createRole" class="form-select" @bind="@_viewRole">
+                @foreach (var role in _roles)
+                {
+                    <option value="@role.Name">@role.Name</option>
+                }
+            </select>
+       </div>
     </div>
 </div>
 
@@ -17,14 +23,27 @@
     private string resourceType = "GIBS.Module.DataRoom.Settings, GIBS.Module.DataRoom.Client.Oqtane"; // for localization
     public override string Title => "DataRoom Settings";
 
-    string _value;
+    
+    private string _viewRole;
+
+    private List<Role> _roles { get; set; } = new List<Role>();
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
+            if (UserSecurity.IsAuthorized(PageState.User, RoleNames.Host))
+            {
+                _roles = await RoleService.GetRolesAsync(PageState.Site.SiteId, true);
+                _roles.RemoveAll(item => item.Name == RoleNames.Everyone || item.Name == RoleNames.Unauthenticated);
+            }
+            else
+            {
+                _roles = await RoleService.GetRolesAsync(PageState.Site.SiteId);
+                _roles.RemoveAll(item => item.Name == RoleNames.Everyone || item.Name == RoleNames.Unauthenticated);
+            }
             Dictionary<string, string> settings = await SettingService.GetModuleSettingsAsync(ModuleState.ModuleId);
-            _value = SettingService.GetSetting(settings, "SettingName", "");
+            _viewRole = SettingService.GetSetting(settings, "ViewRole", "");
         }
         catch (Exception ex)
         {
@@ -37,7 +56,7 @@
         try
         {
             var settings = await SettingService.GetModuleSettingsAsync(ModuleState.ModuleId);
-            settings = SettingService.SetSetting(settings, "SettingName", _value);
+            settings = SettingService.SetSetting(settings, "ViewRole", _viewRole);
             await SettingService.UpdateModuleSettingsAsync(settings, ModuleState.ModuleId);
         }
         catch (Exception ex)

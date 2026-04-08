@@ -56,7 +56,7 @@ else
                 @if (!string.IsNullOrEmpty(_watermarkText))
                 {
                     <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; overflow:hidden; z-index:10;">
-                        <div style="transform:rotate(-35deg); color:rgba(180,0,0,.18); font-size:clamp(14px,2.4vw,28px); font-weight:bold; white-space:pre-line; text-align:center; line-height:1.8; letter-spacing:.04em;">@_watermarkText</div>
+                        <div style="transform:rotate(-35deg); color:rgba(180,0,0,.18); font-size:clamp(20px,2.4vw,28px); font-weight:bold; white-space:pre-line; text-align:center; line-height:1.8; letter-spacing:.04em;">@_watermarkText</div>
                     </div>
                 }
             </div>
@@ -190,7 +190,7 @@ else
         body {{ background: #525659; display: flex; align-items: center; justify-content: center; user-select: none; -webkit-user-select: none; overflow: hidden; }}
         img {{ max-width: 100%; max-height: 100%; object-fit: contain; box-shadow: 0 4px 16px rgba(0,0,0,.5); }}
         .wm-overlay {{ position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; overflow: hidden; z-index: 10; }}
-        .wm-text {{ transform: rotate(-35deg); color: rgba(180, 0, 0, .18); font-size: clamp(14px, 2.4vw, 28px); font-weight: bold; white-space: pre-line; text-align: center; line-height: 1.5; letter-spacing: .04em; }}
+        .wm-text {{ transform: rotate(-35deg); color: rgba(180, 0, 0, .18); font-size: clamp(20px, 3.2vw, 42px); font-weight: bold; white-space: pre-line; text-align: center; line-height: 1.5; letter-spacing: .04em; }}
     </style>
 </head>
 <body oncontextmenu=""return false;"">

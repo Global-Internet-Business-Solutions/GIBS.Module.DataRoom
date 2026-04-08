@@ -1,11 +1,14 @@
 @using GIBS.Module.DataRoom.Services
 @using GIBS.Module.DataRoom.Models
+@using Oqtane.Models
 
 @namespace GIBS.Module.DataRoom
 @inherits ModuleBase
 @inject IDataRoomService DataRoomService
 @inject IDataRoomActivityLogService ActivityLogService
 @inject IFileService FileService
+@inject ISettingService SettingService
+@inject INotificationService NotificationService
 
 @if (!_initialized)
 {
@@ -28,6 +31,10 @@ else if (_dataRoom == null)
 else if (!_dataRoom.IsActive)
 {
     <div class="alert alert-warning mb-0">This Data Room is currently inactive.</div>
+}
+else if (!_isViewRoleAuthorized)
+{
+    <div class="alert alert-danger mb-0">You are not authorized to view this Data Room.</div>
 }
 else
 {
@@ -119,13 +126,29 @@ else
     private bool _initialized;
     private DataRoom _dataRoom;
     private List<Oqtane.Models.File> _files;
+    private string _ViewRole;
+    private bool _isViewRoleAuthorized = true;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
+            var settings = await SettingService.GetModuleSettingsAsync(ModuleState.ModuleId);
+            _ViewRole = SettingService.GetSetting(settings, "ViewRole", "Administrators");
+            
             var rooms = await DataRoomService.GetDataRoomsAsync(ModuleState.ModuleId);
             _dataRoom = rooms?.FirstOrDefault(r => r.IsActive) ?? rooms?.FirstOrDefault();
+
+            if (_dataRoom != null)
+            {
+                _isViewRoleAuthorized = IsUserAuthorizedForViewRole(_ViewRole);
+                if (!_isViewRoleAuthorized)
+                {
+                    await NotifyUnauthorizedAccessAsync();
+                    _initialized = true;
+                    return;
+                }
+            }
 
             if (_dataRoom != null && _dataRoom.IsActive && _dataRoom.FolderId > 0)
             {
@@ -160,6 +183,62 @@ else
         {
             await logger.LogError(ex, "Error Loading Data Room {Error}", ex.Message);
             AddModuleMessage("Error loading Data Room.", MessageType.Error);
+        }
+    }
+
+    private bool IsUserAuthorizedForViewRole(string viewRoleSetting)
+    {
+        if (IsAuthorizedRole(RoleNames.Admin) || IsAuthorizedRole(RoleNames.Host))
+        {
+            return true;
+        }
+
+        if (string.IsNullOrWhiteSpace(viewRoleSetting))
+        {
+            return true;
+        }
+
+        var roles = viewRoleSetting
+            .Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(r => r.Trim())
+            .Where(r => !string.IsNullOrWhiteSpace(r));
+
+        return roles.Any(IsAuthorizedRole);
+    }
+
+    private async Task NotifyUnauthorizedAccessAsync()
+    {
+        if (_dataRoom == null || string.IsNullOrWhiteSpace(_dataRoom.NotificationEmails) || PageState.User == null)
+        {
+            return;
+        }
+
+        var subject = $"Unauthorized Data Room Access Attempt: {_dataRoom.Name}";
+        var body = $"User '{PageState.User.DisplayName}' ({PageState.User.Email}) attempted to access Data Room '{_dataRoom.Name}' on {DateTime.UtcNow:u}. Required role(s): {_ViewRole}.";
+
+        var recipients = _dataRoom.NotificationEmails
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(e => e.Trim())
+            .Where(e => !string.IsNullOrWhiteSpace(e))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        foreach (var email in recipients)
+        {
+            try
+            {
+                var notification = new Notification(ModuleState.SiteId, email, email, subject, body)
+                {
+                    FromUserId = PageState.User.UserId,
+                    FromDisplayName = PageState.User.DisplayName,
+                    FromEmail = PageState.User.Email ?? string.Empty
+                };
+                await NotificationService.AddNotificationAsync(notification);
+            }
+            catch (Exception ex)
+            {
+                await logger.LogError(ex, "Error sending unauthorized access notification to {Email} for DataRoom {DataRoomId}", email, _dataRoom.DataRoomId);
+            }
         }
     }
 
