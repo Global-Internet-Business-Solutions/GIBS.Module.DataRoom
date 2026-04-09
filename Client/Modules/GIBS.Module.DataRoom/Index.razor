@@ -34,17 +34,17 @@ else if (!_dataRoom.IsActive)
 }
 else if (!_isViewRoleAuthorized)
 {
-    <div class="alert alert-danger mb-0">You are not authorized to view this Data Room.</div>
+    <div class="alert alert-danger mb-0">You are not authorized to view this Data Room. Are you logged in?</div>
 }
 else
 {
     <div class="dataroom">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
-                <h5 class="mb-0">@_dataRoom.Name</h5>
+                <h2 class="mb-0">@_dataRoom.Name</h2>
                 @if (!string.IsNullOrEmpty(_dataRoom.Description))
                 {
-                    <small class="text-muted">@_dataRoom.Description</small>
+                    <h5 class="text-muted">@_dataRoom.Description</h5>
                 }
             </div>
             <div class="d-flex gap-2">

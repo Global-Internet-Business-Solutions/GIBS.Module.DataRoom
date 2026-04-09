@@ -18,29 +18,44 @@ namespace GIBS.Module.DataRoom.Migrations
 
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            var entityBuilder = new DataRoomEntityBuilder(migrationBuilder, ActiveDatabase);
+           
+            migrationBuilder.AddColumn<bool>(
+                name: "EnableDownload",
+                table: "GIBSDataRoom",      // Replace with your actual table name
+                type: "bit",                // Optional for SQL Server, as EF infers this from <bool>
+                nullable: false,
+                defaultValue: true);
 
-            // Default true  — existing rooms keep downloads enabled
-            entityBuilder.AddBooleanColumn("EnableDownload", nullable: false, defaultValue: true);
+            migrationBuilder.AddColumn<bool>(
+                name: "EnableViewOnly",
+                table: "GIBSDataRoom",      // Replace with your actual table name
+                type: "bit",                // Standard for SQL Server bools  
+                nullable: false,
+                defaultValue: false);
 
-            // Default false — existing rooms are not view-only
-            entityBuilder.AddBooleanColumn("EnableViewOnly", nullable: false, defaultValue: false);
+            migrationBuilder.AddColumn<bool>(
+                name: "EnableWatermark",
+                table: "GIBSDataRoom",      // Replace with your actual table name
+                type: "bit",                // Standard for SQL Server bools  
+                nullable: false,
+                defaultValue: false);
 
-            // Default false — existing rooms have no watermark
-            entityBuilder.AddBooleanColumn("EnableWatermark", nullable: false, defaultValue: false);
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            var entityBuilder = new DataRoomEntityBuilder(migrationBuilder, ActiveDatabase);
-            entityBuilder.DropColumn("EnableDownload");
-            entityBuilder.DropColumn("EnableViewOnly");
-            entityBuilder.DropColumn("EnableWatermark");
+            migrationBuilder.DropColumn(
+                 name: "EnableDownload",
+                 table: "GIBSDataRoom");
+
+            migrationBuilder.DropColumn(
+                name: "EnableViewOnly",
+                table: "GIBSDataRoom");
+
+            migrationBuilder.DropColumn(
+                name: "EnableWatermark",
+                table: "GIBSDataRoom");
         }
     }
 }
 
-
-//public bool EnableDownload { get; set; } // New property to control download permissions
-//public bool EnableViewOnly { get; set; } // New property to control view-only permissions
-//public bool EnableWatermark { get; set; } // New property to control watermarking of viewed/downloaded files

@@ -29,10 +29,10 @@ namespace GIBS.Module.DataRoom.Migrations.EntityBuilders
             Description = AddMaxStringColumn(table, "Description", true);
             FolderId = AddIntegerColumn(table, "FolderId");
             IsActive = AddBooleanColumn(table, "IsActive");
-            NotificationEmails = AddMaxStringColumn(table, "NotificationEmails", true);
-            EnableDownload = AddBooleanColumn(table, "EnableDownload", nullable: false, defaultValue: true);
-            EnableViewOnly = AddBooleanColumn(table, "EnableViewOnly");
-            EnableWatermark = AddBooleanColumn(table, "EnableWatermark");
+            //NotificationEmails = AddMaxStringColumn(table, "NotificationEmails", true);
+            //EnableDownload = AddBooleanColumn(table, "EnableDownload", nullable: false, defaultValue: true);
+            //EnableViewOnly = AddBooleanColumn(table, "EnableViewOnly");
+            //EnableWatermark = AddBooleanColumn(table, "EnableWatermark");
             AddAuditableColumns(table);
             return this;
         }
@@ -44,9 +44,9 @@ namespace GIBS.Module.DataRoom.Migrations.EntityBuilders
         public OperationBuilder<AddColumnOperation> Description { get; set; }
         public OperationBuilder<AddColumnOperation> FolderId { get; set; }
         public OperationBuilder<AddColumnOperation> IsActive { get; set; }
-        public OperationBuilder<AddColumnOperation> NotificationEmails { get; set; }
-        public OperationBuilder<AddColumnOperation> EnableDownload { get; set; }
-        public OperationBuilder<AddColumnOperation> EnableViewOnly { get; set; }
-        public OperationBuilder<AddColumnOperation> EnableWatermark { get; set; }
+        //public OperationBuilder<AddColumnOperation> NotificationEmails { get; set; }
+        //public OperationBuilder<AddColumnOperation> EnableDownload { get; set; }
+        //public OperationBuilder<AddColumnOperation> EnableViewOnly { get; set; }
+        //public OperationBuilder<AddColumnOperation> EnableWatermark { get; set; }
     }
 }

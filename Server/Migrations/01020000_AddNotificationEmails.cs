@@ -17,14 +17,21 @@ namespace GIBS.Module.DataRoom.Migrations
 
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            var entityBuilder = new DataRoomEntityBuilder(migrationBuilder, ActiveDatabase);
-            entityBuilder.AddMaxStringColumn("NotificationEmails", true);
+            //   var entityBuilder = new DataRoomEntityBuilder(migrationBuilder, ActiveDatabase);
+            //   entityBuilder.AddMaxStringColumn("NotificationEmails", true);
+            migrationBuilder.AddColumn<string>(
+                name: "NotificationEmails",
+                table: "GIBSDataRoom",
+                type: "nvarchar(max)", // Explicitly sets the database type
+                nullable: true);
         }
+                
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            var entityBuilder = new DataRoomEntityBuilder(migrationBuilder, ActiveDatabase);
-            entityBuilder.DropColumn("NotificationEmails");
+            migrationBuilder.DropColumn(
+                name: "NotificationEmails",
+                table: "GIBSDataRoom");
         }
     }
 }
