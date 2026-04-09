@@ -21,22 +21,22 @@ namespace GIBS.Module.DataRoom.Migrations
            
             migrationBuilder.AddColumn<bool>(
                 name: "EnableDownload",
-                table: "GIBSDataRoom",      // Replace with your actual table name
-                type: "bit",                // Optional for SQL Server, as EF infers this from <bool>
+                table: "GIBSDataRoom",      
+                type: "bit",                
                 nullable: false,
                 defaultValue: true);
 
             migrationBuilder.AddColumn<bool>(
                 name: "EnableViewOnly",
-                table: "GIBSDataRoom",      // Replace with your actual table name
-                type: "bit",                // Standard for SQL Server bools  
+                table: "GIBSDataRoom",      
+                type: "bit",                 
                 nullable: false,
                 defaultValue: false);
 
             migrationBuilder.AddColumn<bool>(
                 name: "EnableWatermark",
-                table: "GIBSDataRoom",      // Replace with your actual table name
-                type: "bit",                // Standard for SQL Server bools  
+                table: "GIBSDataRoom",      
+                type: "bit",                
                 nullable: false,
                 defaultValue: false);
 

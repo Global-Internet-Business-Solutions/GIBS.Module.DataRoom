@@ -17,8 +17,6 @@ namespace GIBS.Module.DataRoom.Migrations
 
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            //   var entityBuilder = new DataRoomEntityBuilder(migrationBuilder, ActiveDatabase);
-            //   entityBuilder.AddMaxStringColumn("NotificationEmails", true);
             migrationBuilder.AddColumn<string>(
                 name: "NotificationEmails",
                 table: "GIBSDataRoom",
