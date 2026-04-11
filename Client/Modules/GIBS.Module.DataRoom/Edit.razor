@@ -138,7 +138,16 @@
                         <td>@GetUserDisplay(context.UserId)</td>
                         <td>@GetFileName(context.FileId)</td>
                         <td>@UtcToLocal(context.Timestamp)?.ToString("g")</td>
-                        <td>@(string.IsNullOrEmpty(context.IPAddress) ? "-" : context.IPAddress)</td>
+                        <td>
+                            @if (string.IsNullOrEmpty(context.IPAddress))
+                            {
+                                <span>-</span>
+                            }
+                            else
+                            {
+                                <a href="https://ip-address-lookup-v4.com/ip/@context.IPAddress" target="_blank">@context.IPAddress</a>
+                            }
+                        </td>
                     </Row>
                 </Pager>
             }

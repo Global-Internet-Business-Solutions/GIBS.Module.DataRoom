@@ -64,48 +64,46 @@ else
 
         @if (_files != null && _files.Any())
         {
-            <table class="table table-hover table-sm align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Name</th>
-                        <th>Type</th>
-                        <th>Size</th>
-                        <th>Modified</th>
-                        <th class="text-end">Action</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var file in _files)
-                    {
-                        <tr>
-                            <td>@file.Name</td>
-                            <td><span class="badge bg-light text-dark border">@file.Extension?.TrimStart('.').ToUpper()</span></td>
-                            <td class="text-nowrap">@FormatSize(file.Size)</td>
-                            <td class="text-nowrap">@UtcToLocal(file.ModifiedOn)?.ToString("g")</td>
-                            <td class="text-end">
-                                @if (_dataRoom.EnableViewOnly)
-                                {
-                                    <ActionLink Action="View" Parameters="@($"fileid={file.FileId}&dataroomid={_dataRoom.DataRoomId}")" IconName="eye" Text="View" Class="btn btn-sm btn-info text-white me-1">
-                                        
-                                    </ActionLink>
-                                }
-                                @if (_dataRoom.EnableDownload)
-                                {
-                                    <button class="btn btn-sm btn-primary"
-                                            @onclick="@(async () => await DownloadFileAsync(file.FileId, file.Name))"
-                                            title="Download @file.Name">
-                                        <span class="oi oi-cloud-download me-1"></span>Download
-                                    </button>
-                                }
-                                @if (!_dataRoom.EnableViewOnly && !_dataRoom.EnableDownload)
-                                {
-                                    <span class="text-muted small">Access Restricted</span>
-                                }
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+            <Pager TableItem="Oqtane.Models.File"
+                   Items="@_files"
+                   Format="Table"
+                   Toolbar="Bottom" 
+                   PageSize="10" 
+                   Class="table table-striped table-hover table-sm align-middle mb-0">        
+                <Header>               
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Size</th>
+                    <th>Modified</th>
+                    <th class="text-end">Action</th>          
+                </Header>
+                
+                <Row Context="file">
+                    <td>@file.Name</td>
+                    <td><span class="badge bg-light text-dark border">@file.Extension?.TrimStart('.').ToUpper()</span></td>
+                    <td class="text-nowrap">@FormatSize(file.Size)</td>
+                    <td class="text-nowrap">@UtcToLocal(file.ModifiedOn)?.ToString("g")</td>
+                    <td class="text-end">
+                        @if (_dataRoom.EnableViewOnly)
+                        {
+                            <ActionLink Action="View" Parameters="@($"fileid={file.FileId}&dataroomid={_dataRoom.DataRoomId}")" IconName="eye" Text="View" Class="btn btn-sm btn-info text-white me-1">
+                            </ActionLink>
+                        }
+                        @if (_dataRoom.EnableDownload)
+                        {
+                            <button class="btn btn-sm btn-primary"
+                                    @onclick="@(async () => await DownloadFileAsync(file.FileId, file.Name))"
+                                    title="Download @file.Name">
+                                <span class="oi oi-cloud-download me-1"></span>Download
+                            </button>
+                        }
+                        @if (!_dataRoom.EnableViewOnly && !_dataRoom.EnableDownload)
+                        {
+                            <span class="text-muted small">Access Restricted</span>
+                        }
+                    </td>
+                </Row>
+            </Pager>
         }
         else
         {
