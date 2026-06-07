@@ -26,6 +26,19 @@
                              ShowSuccess="true"
                              OnUpload="HandleUploadAsync" />
                 <hr />
+
+                 <div class="mb-3">
+                     <div class="form-check">
+                         <input type="checkbox" class="form-check-input" id="enableZipExtraction" @bind="_enableZipExtraction" />
+                         <label class="form-check-label" for="enableZipExtraction">
+                             Enable Automatic ZIP Extraction
+                         </label>
+                         <small class="form-text text-muted d-block">
+                             If checked, uploaded ZIP files will be automatically extracted into the folder structure.
+                         </small>
+                     </div>
+                 </div>
+
                 <button class="btn btn-outline-secondary btn-sm" @onclick="DownloadZipAsync">
                     <span class="oi oi-data-transfer-download me-1"></span>Download All (ZIP)
                 </button>
@@ -345,6 +358,9 @@
     private bool _renameIsFolder = false;
     private string _activeTab = "Documents";
 
+    // ZIP extraction state
+    private bool _enableZipExtraction = false;
+
     // File browser state
     private List<File> _files;
     private List<FolderBrowserItem> _browserItems;
@@ -499,10 +515,46 @@
                 IPAddress = string.Empty
             }, ModuleState.ModuleId);
 
-            // Refresh log tab
+            // Check if ZIP extraction is enabled and file is a ZIP
+            if (_enableZipExtraction)
+            {
+                // Get file name to check extension
+                await LoadFileNamesAsync();
+
+                if (_fileNames.TryGetValue(fileId, out var fileName) && fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
+                {
+                    try
+                    {
+                        // Call server endpoint to extract ZIP
+                        var url = $"{PageState.Alias.BaseUrl}api/DataRoom/Extract/{_dataRoom.DataRoomId}/{ModuleState.ModuleId}/{fileId}?authmoduleid={ModuleState.ModuleId}";
+                        using (var response = await HttpClient.PostAsync(url, null))
+                        {
+                            if (response.IsSuccessStatusCode)
+                            {
+                                AddModuleMessage($"ZIP file '{fileName}' extracted successfully.", MessageType.Success);
+
+                                // Refresh browser to show extracted files
+                                await RefreshBrowserAsync();
+                            }
+                            else
+                            {
+                                var errorContent = await response.Content.ReadAsStringAsync();
+                                AddModuleMessage($"Error extracting ZIP: {response.StatusCode}", MessageType.Error);
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        await logger.LogError(ex, "Error extracting ZIP file {FileId}", fileId);
+                        AddModuleMessage($"Error extracting ZIP: {ex.Message}", MessageType.Error);
+                    }
+                }
+            }
+
+            // Refresh log tab and browser
             _activityLogs = await ActivityLogService.GetActivityLogsAsync(_dataRoom.DataRoomId, ModuleState.ModuleId);
-            await LoadFileNamesAsync();
             await LoadUserDisplayNamesAsync();
+            await RefreshBrowserAsync();
             StateHasChanged();
         }
         catch (Exception ex)
@@ -939,3 +991,4 @@
         public DateTime ModifiedOn { get; set; }
     }
 }
+
