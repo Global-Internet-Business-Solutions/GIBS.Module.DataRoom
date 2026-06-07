@@ -1,4 +1,5 @@
 @using Oqtane.Modules.Controls
+@using Oqtane.Models
 @using GIBS.Module.DataRoom.Services
 @using GIBS.Module.DataRoom.Models
 
@@ -9,9 +10,182 @@
 @inject IFolderService FolderService
 @inject IFileService FileService
 @inject IUserService UserService
+@inject ISettingService SettingService
 @inject NavigationManager NavigationManager
 
-<TabStrip>
+<TabStrip ActiveTab="@_activeTab">
+       <TabPanel Name="Documents" Heading="Documents" ResourceKey="Documents">
+
+            <p>FIRST_PANEL</p>
+            @if (_dataRoom != null && _dataRoom.FolderId > 0)
+            {
+                <FileManager FolderId="@_dataRoom.FolderId"
+                             ShowFolders="false"
+                             UploadMultiple="true"
+                             ShowSuccess="true"
+                             OnUpload="HandleUploadAsync" />
+                <hr />
+                <button class="btn btn-outline-secondary btn-sm" @onclick="DownloadZipAsync">
+                    <span class="oi oi-data-transfer-download me-1"></span>Download All (ZIP)
+                </button>
+
+                <hr />
+
+                @if (_browserItems != null && _browserItems.Any())
+                {
+                    <Pager TableItem="FolderBrowserItem"
+                           Items="@_browserItems"
+                           Format="Table"
+                           Toolbar="Bottom"
+                           PageSize="@_numberPerPage.ToString()"
+                           Class="table table-striped table-hover table-sm align-middle mb-0">
+                        <Header>
+                            <th style="cursor: pointer;" @onclick="@(() => OnSortColumnChanged("Name"))">
+                                Name
+                                @if (_sortColumn == "Name")
+                                {
+                                    <span class="oi oi-sort-@(_sortDescending ? "descending" : "ascending")" style="margin-left: 5px;"></span>
+                                }
+                            </th>
+                            <th style="cursor: pointer;" @onclick="@(() => OnSortColumnChanged("Type"))">
+                                Type
+                                @if (_sortColumn == "Type")
+                                {
+                                    <span class="oi oi-sort-@(_sortDescending ? "descending" : "ascending")" style="margin-left: 5px;"></span>
+                                }
+                            </th>
+                            <th style="cursor: pointer;" @onclick="@(() => OnSortColumnChanged("Size"))">
+                                Size
+                                @if (_sortColumn == "Size")
+                                {
+                                    <span class="oi oi-sort-@(_sortDescending ? "descending" : "ascending")" style="margin-left: 5px;"></span>
+                                }
+                            </th>
+                            <th style="cursor: pointer;" @onclick="@(() => OnSortColumnChanged("ModifiedOn"))">
+                                Modified
+                                @if (_sortColumn == "ModifiedOn")
+                                {
+                                    <span class="oi oi-sort-@(_sortDescending ? "descending" : "ascending")" style="margin-left: 5px;"></span>
+                                }
+                            </th>
+                            <th class="text-end">Action</th>
+                        </Header>
+
+                        <Row Context="item">
+                            @if (item.IsFolder)
+                            {
+                                <td>
+                                    <button class="btn btn-link btn-sm p-0 text-start" @onclick="() => OpenFolder(item.FolderId)">
+                                        <span class="oi oi-folder me-1"></span>@item.Name
+                                    </button>
+                                </td>
+                                <td><span class="badge bg-light text-dark border">Folder</span></td>
+                                <td></td>
+                                <td></td>
+                                <td class="text-end">
+                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenFolder(item.FolderId)">Open</button>
+                                </td>
+                            }
+                            else
+                            {
+                                <td>@item.Name</td>
+                                <td><span class="badge bg-light text-dark border">@item.Extension?.TrimStart('.').ToUpper()</span></td>
+                                <td class="text-nowrap">@FormatSize(item.Size)</td>
+                                <td class="text-nowrap">@UtcToLocal(item.ModifiedOn)?.ToString("g")</td>
+                                <td class="text-end">
+                                    @{
+                                        var ext = item.Extension?.TrimStart('.').ToLower() ?? string.Empty;
+                                        var isOfficeDoc = new[] { "doc", "docx", "xls", "xlsx", "ppt", "pptx" }.Contains(ext);
+                                    }
+                                    @if (isOfficeDoc)
+                                    {
+                                        <img src="@GetFileTypeIcon(ext)" alt="@GetFileTypeLabel(ext)" style="height: 1.5rem; width: 1.5rem; margin-right: 0.5rem;" title="@GetFileTypeLabel(ext)" />
+                                        @if (_dataRoom?.EnableDownload ?? false)
+                                        {
+                                            <button class="btn btn-sm btn-primary me-1"
+                                                    @onclick="@(async () => await DownloadFileAsync(item.FileId, item.Name))"
+                                                    title="Download @item.Name">
+                                                <span class="oi oi-cloud-download me-1"></span>Download
+                                            </button>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        @if (_dataRoom?.EnableViewOnly ?? false)
+                                        {
+                                            <ActionLink Action="View" Parameters="@($"fileid={item.FileId}&dataroomid={_dataRoom.DataRoomId}")" IconName="eye" Text="View" Class="btn btn-sm btn-info text-white me-1"></ActionLink>
+                                        }
+                                        @if (_dataRoom?.EnableDownload ?? false)
+                                        {
+                                            <button class="btn btn-sm btn-primary me-1"
+                                                    @onclick="@(async () => await DownloadFileAsync(item.FileId, item.Name))"
+                                                    title="Download @item.Name">
+                                                <span class="oi oi-cloud-download me-1"></span>Download
+                                            </button>
+                                        }
+                                        @if (!(_dataRoom?.EnableViewOnly ?? false) && !(_dataRoom?.EnableDownload ?? false))
+                                        {
+                                            <span class="text-muted small">Access Restricted</span>
+                                        }
+                                    }
+                                    <button class="btn btn-sm btn-outline-secondary ms-1" @onclick="() => OpenRenameFileDialog(item.FileId, item.Name, true)">Rename</button>
+                                </td>
+                            }
+                        </Row>
+                    </Pager>
+                }
+                else
+                {
+                    <div class="alert alert-info">No files or folders found.</div>
+                }
+
+
+
+            }
+            else
+            {
+                <div class="alert alert-info">Save the room settings and select a folder first.</div>
+            }
+        </TabPanel>
+
+        <TabPanel Name="ActivityLog" Heading="Activity Log" ResourceKey="ActivityLog">
+            @if (_activityLogs != null && _activityLogs.Any())
+            {
+                <Pager Items="@_activityLogs" SearchProperties="UserId">
+                    <Header>
+                        <th>Action</th>
+                        <th>User ID</th>
+                        <th>DisplayName</th>
+                        <th>File</th>
+                        <th>Timestamp</th>
+                        <th>IP Address</th>
+                    </Header>
+                    <Row>
+                        <td><span class="badge @GetActionBadge(context.Action)">@context.Action</span></td>
+                        <td>@(string.IsNullOrEmpty(context.UserId) ? "-" : context.UserId)</td>
+                        <td>@GetUserDisplay(context.UserId)</td>
+                        <td>@GetFileName(context.FileId)</td>
+                        <td>@UtcToLocal(context.Timestamp)?.ToString("g")</td>
+                        <td>
+                            @if (string.IsNullOrEmpty(context.IPAddress))
+                            {
+                                <span>-</span>
+                            }
+                            else
+                            {
+                                <a href="https://ip-address-lookup-v4.com/ip/@context.IPAddress" target="_blank">@context.IPAddress</a>
+                            }
+                        </td>
+                    </Row>
+                </Pager>
+            }
+            else
+            {
+                <div class="text-center text-muted py-3">No activity recorded yet.</div>
+            }
+        </TabPanel>
+    
+
     <TabPanel Name="Settings" Heading="Room Settings" ResourceKey="Settings">
         @if (_folders != null)
         {
@@ -99,65 +273,36 @@
         }
     </TabPanel>
 
-    @if (_dataRoom != null)
-    {
-        <TabPanel Name="Documents" Heading="Documents" ResourceKey="Documents">
-            @if (_dataRoom.FolderId > 0)
-            {
-                <FileManager FolderId="@_dataRoom.FolderId"
-                             ShowFolders="false"
-                             UploadMultiple="true"
-                             ShowSuccess="true"
-                             OnUpload="HandleUploadAsync" />
-                <hr />
-                <button class="btn btn-outline-secondary btn-sm" @onclick="DownloadZipAsync">
-                    <span class="oi oi-data-transfer-download me-1"></span>Download All (ZIP)
-                </button>
-            }
-            else
-            {
-                <div class="alert alert-info">Save the room settings and select a folder first.</div>
-            }
-        </TabPanel>
-
-        <TabPanel Name="ActivityLog" Heading="Activity Log" ResourceKey="ActivityLog">
-            @if (_activityLogs != null && _activityLogs.Any())
-            {
-                <Pager Items="@_activityLogs" SearchProperties="UserId">
-                    <Header>
-                        <th>Action</th>
-                        <th>User ID</th>
-                        <th>DisplayName</th>
-                        <th>File</th>
-                        <th>Timestamp</th>
-                        <th>IP Address</th>
-                    </Header>
-                    <Row>
-                        <td><span class="badge @GetActionBadge(context.Action)">@context.Action</span></td>
-                        <td>@(string.IsNullOrEmpty(context.UserId) ? "-" : context.UserId)</td>
-                        <td>@GetUserDisplay(context.UserId)</td>
-                        <td>@GetFileName(context.FileId)</td>
-                        <td>@UtcToLocal(context.Timestamp)?.ToString("g")</td>
-                        <td>
-                            @if (string.IsNullOrEmpty(context.IPAddress))
-                            {
-                                <span>-</span>
-                            }
-                            else
-                            {
-                                <a href="https://ip-address-lookup-v4.com/ip/@context.IPAddress" target="_blank">@context.IPAddress</a>
-                            }
-                        </td>
-                    </Row>
-                </Pager>
-            }
-            else
-            {
-                <div class="text-center text-muted py-3">No activity recorded yet.</div>
-            }
-        </TabPanel>
-    }
+    
 </TabStrip>
+
+@if (_showRenameFileDialog)
+{
+    <div class="modal d-block" style="display: block; background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Rename Item</h5>
+                    <button type="button" class="btn-close" @onclick="() => _showRenameFileDialog = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group mb-3">
+                        <label for="renameInput">New Name:</label>
+                        <input type="text" class="form-control" id="renameInput" @bind="_renameItemName" maxlength="255" />
+                        @if (!string.IsNullOrEmpty(_renameFileExtension))
+                        {
+                            <div class="text-muted small mt-2">Extension: <strong>@_renameFileExtension</strong> (cannot be changed)</div>
+                        }
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => _showRenameFileDialog = false">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="RenameItemAsync">Rename</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
 
 @code {
     public override SecurityAccessLevel SecurityAccessLevel => SecurityAccessLevel.Edit;
@@ -187,6 +332,24 @@
     private bool _enableViewOnly = true;
     private bool _enableWatermark = false;
 
+    // File rename dialog state
+    private bool _showRenameFileDialog = false;
+    private int _renameFileId = 0;
+    private string _renameItemName = string.Empty;
+    private string _renameFileExtension = string.Empty;
+    private string _activeTab = "Documents";
+
+    // File browser state
+    private List<File> _files;
+    private List<FolderBrowserItem> _browserItems;
+    private Dictionary<int, Folder> _folderLookup = new();
+    private HashSet<int> _allowedFolderIds = new();
+    private int _rootFolderId;
+    private int _currentFolderId;
+    private int _numberPerPage = 10;
+    private string _sortColumn = "ModifiedOn";
+    private bool _sortDescending = true;
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -195,7 +358,14 @@
 
             if (PageState.QueryString.ContainsKey("id") && int.TryParse(PageState.QueryString["id"], out int id))
             {
+                await logger.LogInformation("Edit.razor - Loading DataRoom: id={DataRoomId}, ModuleId={ModuleId}", id, ModuleState.ModuleId);
                 _dataRoom = await DataRoomService.GetDataRoomAsync(id, ModuleState.ModuleId);
+
+
+                if (_dataRoom == null)
+                {
+                    await logger.LogWarning("Edit.razor - DataRoom not found or access denied: id={DataRoomId}, ModuleId={ModuleId}", id, ModuleState.ModuleId);
+                }
             }
 
             if (_dataRoom != null)
@@ -211,6 +381,21 @@
                 _activityLogs = await ActivityLogService.GetActivityLogsAsync(_dataRoom.DataRoomId, ModuleState.ModuleId);
                 await LoadFileNamesAsync();
                 await LoadUserDisplayNamesAsync();
+
+                // Load pager settings
+                var settings = await SettingService.GetModuleSettingsAsync(ModuleState.ModuleId);
+                var numberPerPageSetting = SettingService.GetSetting(settings, "NumberPerPage", "10");
+                if (!int.TryParse(numberPerPageSetting, out _numberPerPage) || _numberPerPage < 1)
+                {
+                    _numberPerPage = 10;
+                }
+
+                // Load files and folders for the browser
+                await RefreshBrowserAsync();
+            }
+            else
+            {
+                _activeTab = "Settings"; // New room defaults to settings tab
             }
         }
         catch (Exception ex)
@@ -266,6 +451,9 @@
                 _dataRoom = await DataRoomService.UpdateDataRoomAsync(_dataRoom);
                 await logger.LogInformation("Data Room Updated {DataRoomId}", _dataRoom.DataRoomId);
             }
+
+            // Refresh browser items after save
+            await RefreshBrowserAsync();
 
             NavigationManager.NavigateTo(NavigateUrl());
         }
@@ -412,4 +600,311 @@
         "View"     => "bg-secondary",
         _          => "bg-light text-dark border"
     };
+
+    private void OpenRenameFileDialog(int fileId, string currentName, bool isFile = true)
+    {
+        _renameFileId = fileId;
+
+        if (isFile)
+        {
+            // Extract extension and base name
+            int dotIndex = currentName.LastIndexOf('.');
+            if (dotIndex > 0)
+            {
+                _renameFileExtension = currentName.Substring(dotIndex);
+                _renameItemName = currentName.Substring(0, dotIndex);
+            }
+            else
+            {
+                _renameFileExtension = string.Empty;
+                _renameItemName = currentName;
+            }
+        }
+        else
+        {
+            // Folders don't have extensions
+            _renameFileExtension = string.Empty;
+            _renameItemName = currentName;
+        }
+
+        _showRenameFileDialog = true;
+    }
+
+    private void CloseRenameFileDialog()
+    {
+        _showRenameFileDialog = false;
+        _renameItemName = string.Empty;
+        _renameFileExtension = string.Empty;
+        _renameFileId = 0;
+    }
+
+    private async Task RenameItemAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_renameItemName))
+        {
+            AddModuleMessage("Name cannot be empty.", MessageType.Warning);
+            return;
+        }
+
+        // Validate no dots in the input (extension protection)
+        if (_renameItemName.Contains("."))
+        {
+            AddModuleMessage("Name cannot contain a period (.). The file extension will be added automatically.", MessageType.Warning);
+            return;
+        }
+
+        try
+        {
+            string newName = string.IsNullOrEmpty(_renameFileExtension)
+                ? _renameItemName
+                : _renameItemName + _renameFileExtension;
+
+            // Call service to rename (will implement server endpoint next)
+            // For now, just close the dialog
+            _showRenameFileDialog = false;
+            _renameItemName = string.Empty;
+            _renameFileExtension = string.Empty;
+            _renameFileId = 0;
+
+            AddModuleMessage($"Item renamed to: {newName}", MessageType.Success);
+        }
+        catch (Exception ex)
+        {
+            AddModuleMessage($"Error renaming item: {ex.Message}", MessageType.Error);
+        }
+    }
+
+    private void OpenFolder(int folderId)
+    {
+        if (!_allowedFolderIds.Contains(folderId))
+        {
+            return;
+        }
+
+        _currentFolderId = folderId;
+        BuildBrowserItems();
+    }
+
+    private void BuildBrowserItems()
+    {
+        var items = new List<FolderBrowserItem>();
+
+        var childFolders = _folders
+            .Where(f => f.ParentId == _currentFolderId && _allowedFolderIds.Contains(f.FolderId))
+            .OrderBy(f => f.Name)
+            .Select(f => new FolderBrowserItem
+            {
+                IsFolder = true,
+                FolderId = f.FolderId,
+                Name = f.Name
+            });
+
+        items.AddRange(childFolders);
+
+        var currentFolderFiles = (_files ?? new List<File>())
+            .Where(f => f.FolderId == _currentFolderId)
+            .Select(f => new FolderBrowserItem
+            {
+                IsFolder = false,
+                FolderId = f.FolderId,
+                FileId = f.FileId,
+                Name = f.Name,
+                Extension = f.Extension,
+                Size = f.Size,
+                ModifiedOn = f.ModifiedOn
+            })
+            .ToList();
+
+        // Apply sorting based on _sortColumn and _sortDescending
+        currentFolderFiles = ApplySorting(currentFolderFiles);
+        items.AddRange(currentFolderFiles);
+
+        _browserItems = items;
+    }
+
+    private List<FolderBrowserItem> ApplySorting(List<FolderBrowserItem> items)
+    {
+        return _sortColumn switch
+        {
+            "Name" => _sortDescending
+                ? items.OrderByDescending(x => x.Name).ToList()
+                : items.OrderBy(x => x.Name).ToList(),
+            "Type" => _sortDescending
+                ? items.OrderByDescending(x => x.Extension ?? "").ToList()
+                : items.OrderBy(x => x.Extension ?? "").ToList(),
+            "Size" => _sortDescending
+                ? items.OrderByDescending(x => x.Size).ToList()
+                : items.OrderBy(x => x.Size).ToList(),
+            "ModifiedOn" => _sortDescending
+                ? items.OrderByDescending(x => x.ModifiedOn).ToList()
+                : items.OrderBy(x => x.ModifiedOn).ToList(),
+            _ => _sortDescending
+                ? items.OrderByDescending(x => x.ModifiedOn).ToList()
+                : items.OrderBy(x => x.ModifiedOn).ToList()
+        };
+    }
+
+    private void OnSortColumnChanged(string columnName)
+    {
+        if (_sortColumn == columnName)
+        {
+            // If clicking the same column, toggle the sort direction
+            _sortDescending = !_sortDescending;
+        }
+        else
+        {
+            // If clicking a different column, set it as the new sort column with descending order
+            _sortColumn = columnName;
+            _sortDescending = true;
+        }
+
+        BuildBrowserItems();
+    }
+
+    private string FormatSize(int bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        double len = bytes;
+        int order = 0;
+
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len = len / 1024;
+        }
+
+        return $"{len:0.##} {sizes[order]}";
+    }
+
+    private string GetFileTypeIcon(string extension)
+    {
+        return extension.ToLower() switch
+        {
+            "docx" or "doc" => "_content/GIBS.Module.DataRoom/icons/word.svg",
+            "xlsx" or "xls" => "_content/GIBS.Module.DataRoom/icons/excel.svg",
+            "pptx" or "ppt" => "_content/GIBS.Module.DataRoom/icons/powerpoint.svg",
+            _ => "_content/GIBS.Module.DataRoom/icons/document.svg"
+        };
+    }
+
+    private string GetFileTypeLabel(string extension)
+    {
+        return extension.ToLower() switch
+        {
+            "docx" or "doc" => "Word Document",
+            "xlsx" or "xls" => "Excel Spreadsheet",
+            "pptx" or "ppt" => "PowerPoint Presentation",
+            _ => "Document"
+        };
+    }
+
+    private async Task DownloadFileAsync(int fileId, string fileName)
+    {
+        try
+        {
+            if (_dataRoom == null) return;
+
+            if (PageState.User != null)
+            {
+                await ActivityLogService.AddActivityLogAsync(new DataRoomActivityLog
+                {
+                    DataRoomId = _dataRoom.DataRoomId,
+                    FileId = fileId,
+                    UserId = PageState.User.UserId.ToString(),
+                    Action = "Download",
+                    Timestamp = DateTime.UtcNow,
+                    IPAddress = string.Empty
+                }, ModuleState.ModuleId);
+            }
+
+            var uri = NavigationManager.GetUriWithQueryParameter("download", $"{fileId}");
+            NavigationManager.NavigateTo(uri, forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error downloading file {FileId}", fileId);
+            AddModuleMessage("Error downloading file.", MessageType.Error);
+        }
+    }
+
+    private async Task RefreshBrowserAsync()
+    {
+        if (_dataRoom == null || _dataRoom.FolderId <= 0)
+        {
+            return;
+        }
+
+        try
+        {
+            _rootFolderId = _dataRoom.FolderId;
+            _currentFolderId = _rootFolderId;
+
+            _folders = await FolderService.GetFoldersAsync(ModuleState.SiteId);
+            _folderLookup = _folders.ToDictionary(f => f.FolderId);
+
+            _files = await GetFilesFromFolderHierarchyAsync(_rootFolderId, _folders);
+            BuildBrowserItems();
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error loading files and folders");
+            AddModuleMessage("Error loading files and folders.", MessageType.Error);
+        }
+    }
+
+    private async Task<List<File>> GetFilesFromFolderHierarchyAsync(int rootFolderId, List<Folder> folders)
+    {
+        var childrenByParent = folders
+            .Where(f => f.ParentId.HasValue)
+            .GroupBy(f => f.ParentId.Value)
+            .ToDictionary(g => g.Key, g => g.Select(f => f.FolderId).ToList());
+
+        var folderIds = new HashSet<int> { rootFolderId };
+        var queue = new Queue<int>();
+        queue.Enqueue(rootFolderId);
+
+        while (queue.Count > 0)
+        {
+            var currentFolderId = queue.Dequeue();
+            if (!childrenByParent.TryGetValue(currentFolderId, out var childIds))
+            {
+                continue;
+            }
+
+            foreach (var childId in childIds)
+            {
+                if (folderIds.Add(childId))
+                {
+                    queue.Enqueue(childId);
+                }
+            }
+        }
+
+        _allowedFolderIds = folderIds;
+
+        var files = new List<File>();
+        foreach (var folderId in folderIds)
+        {
+            var folderFiles = await FileService.GetFilesAsync(folderId);
+            if (folderFiles != null)
+            {
+                files.AddRange(folderFiles);
+            }
+        }
+
+        return files
+            .OrderBy(f => f.Name)
+            .ToList();
+    }
+
+    private class FolderBrowserItem
+    {
+        public bool IsFolder { get; set; }
+        public int FolderId { get; set; }
+        public int FileId { get; set; }
+        public string Name { get; set; }
+        public string Extension { get; set; }
+        public int Size { get; set; }
+        public DateTime ModifiedOn { get; set; }
+    }
 }

@@ -6,6 +6,7 @@
 @inherits ModuleBase
 @inject IDataRoomService DataRoomService
 @inject IDataRoomActivityLogService ActivityLogService
+@inject IFolderService FolderService
 @inject IFileService FileService
 @inject ISettingService SettingService
 @inject INotificationService NotificationService
@@ -19,11 +20,11 @@
 else if (_dataRoom == null)
 {
     <div class="alert alert-info">
-        <p class="mb-0">No Data Room has been configured for this module.</p>
+        <p class="mb-0">You may not have permissions to access this data room. Please contact the site administrator.</p>
         @if (IsAuthorizedPermission(PermissionNames.Edit))
         {
             <div class="mt-2">
-                <ActionLink Action="Edit" Text="Configure Data Room" Class="btn btn-sm btn-primary" />
+                <ActionLink Action="Edit" Parameters="@($"id={_dataRoom?.DataRoomId ?? 0}")" Text="Configure Data Room" Class="btn btn-sm btn-primary" />
             </div>
         }
     </div>
@@ -48,7 +49,7 @@ else
                 }
             </div>
             <div class="d-flex gap-2">
-                @if (_files != null && _files.Any() && (_dataRoom.EnableDownload || IsAuthorizedPermission(PermissionNames.Edit)))
+                @if (_files != null && _files.Any() && (_dataRoom.EnableDownload))
                 {
                     <button class="btn btn-sm btn-outline-secondary" @onclick="DownloadZipAsync"
                             title="Download all files as a ZIP archive">
@@ -62,46 +63,116 @@ else
             </div>
         </div>
 
-        @if (_files != null && _files.Any())
+        @if (_browserItems != null && _browserItems.Any())
         {
-            <Pager TableItem="Oqtane.Models.File"
-                   Items="@_files"
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="text-muted small"><b>Current Folder:</b> @_currentFolderPath</span>
+                @if (CanNavigateUp)
+                {
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="OpenParentFolder">
+                        <span class="oi oi-arrow-thick-left me-1"></span>Up One Level
+                    </button>
+                }
+            </div>
+
+            <Pager TableItem="FolderBrowserItem"
+                   Items="@_browserItems"
                    Format="Table"
                    Toolbar="Bottom" 
-                   PageSize="10" 
+                   PageSize="@_numberPerPage.ToString()" 
                    Class="table table-striped table-hover table-sm align-middle mb-0">        
                 <Header>               
-                    <th>Name</th>
-                    <th>Type</th>
-                    <th>Size</th>
-                    <th>Modified</th>
+                    <th style="cursor: pointer;" @onclick='@(() => OnSortColumnChanged("Name"))'>
+                        Name
+                        @if (_sortColumn == "Name")
+                        {
+                            <span class="oi oi-sort-@(_sortDescending ? "descending" : "ascending")" style="margin-left: 5px;"></span>
+                        }
+                    </th>
+                    <th style="cursor: pointer;" @onclick='@(() => OnSortColumnChanged("Type"))'>
+                        Type
+                        @if (_sortColumn == "Type")
+                        {
+                            <span class="oi oi-sort-@(_sortDescending ? "descending" : "ascending")" style="margin-left: 5px;"></span>
+                        }
+                    </th>
+                    <th style="cursor: pointer;" @onclick='@(() => OnSortColumnChanged("Size"))'>
+                        Size
+                        @if (_sortColumn == "Size")
+                        {
+                            <span class="oi oi-sort-@(_sortDescending ? "descending" : "ascending")" style="margin-left: 5px;"></span>
+                        }
+                    </th>
+                    <th style="cursor: pointer;" @onclick='@(() => OnSortColumnChanged("ModifiedOn"))'>
+                        Modified
+                        @if (_sortColumn == "ModifiedOn")
+                        {
+                            <span class="oi oi-sort-@(_sortDescending ? "descending" : "ascending")" style="margin-left: 5px;"></span>
+                        }
+                    </th>
                     <th class="text-end">Action</th>          
                 </Header>
-                
-                <Row Context="file">
-                    <td>@file.Name</td>
-                    <td><span class="badge bg-light text-dark border">@file.Extension?.TrimStart('.').ToUpper()</span></td>
-                    <td class="text-nowrap">@FormatSize(file.Size)</td>
-                    <td class="text-nowrap">@UtcToLocal(file.ModifiedOn)?.ToString("g")</td>
-                    <td class="text-end">
-                        @if (_dataRoom.EnableViewOnly)
-                        {
-                            <ActionLink Action="View" Parameters="@($"fileid={file.FileId}&dataroomid={_dataRoom.DataRoomId}")" IconName="eye" Text="View" Class="btn btn-sm btn-info text-white me-1">
-                            </ActionLink>
-                        }
-                        @if (_dataRoom.EnableDownload)
-                        {
-                            <button class="btn btn-sm btn-primary"
-                                    @onclick="@(async () => await DownloadFileAsync(file.FileId, file.Name))"
-                                    title="Download @file.Name">
-                                <span class="oi oi-cloud-download me-1"></span>Download
+
+                <Row Context="item">
+                    @if (item.IsFolder)
+                    {
+                        <td>
+                            <button class="btn btn-link btn-sm p-0 text-start" @onclick="() => OpenFolder(item.FolderId)">
+                                <span class="oi oi-folder me-1"></span>@item.Name
                             </button>
-                        }
-                        @if (!_dataRoom.EnableViewOnly && !_dataRoom.EnableDownload)
-                        {
-                            <span class="text-muted small">Access Restricted</span>
-                        }
-                    </td>
+                        </td>
+                        <td><span class="badge bg-light text-dark border">Folder</span></td>
+                        <td></td>
+                        <td></td>
+                        <td class="text-end">
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenFolder(item.FolderId)">Open</button>
+                        </td>
+                    }
+                    else
+                    {
+                        <td>@item.Name</td>
+                        <td><span class="badge bg-light text-dark border">@item.Extension?.TrimStart('.').ToUpper()</span></td>
+                        <td class="text-nowrap">@FormatSize(item.Size)</td>
+                        <td class="text-nowrap">@UtcToLocal(item.ModifiedOn)?.ToString("g")</td>
+                        <td class="text-end">
+                            @{
+                                var ext = item.Extension?.TrimStart('.').ToLower() ?? string.Empty;
+                                var isOfficeDoc = new[] { "doc", "docx", "xls", "xlsx", "ppt", "pptx" }.Contains(ext);
+                            }
+                            @if (isOfficeDoc)
+                            {
+                                <img src="@GetFileTypeIcon(ext)" alt="@GetFileTypeLabel(ext)" style="height: 1.5rem; width: 1.5rem; margin-right: 0.5rem;" title="@GetFileTypeLabel(ext)" />
+                                @if (_dataRoom.EnableDownload)
+                                {
+                                    <button class="btn btn-sm btn-primary"
+                                            @onclick="@(async () => await DownloadFileAsync(item.FileId, item.Name))"
+                                            title="Download @item.Name">
+                                        <span class="oi oi-cloud-download me-1"></span>Download
+                                    </button>
+                                }
+                            }
+                            else
+                            {
+                                @if (_dataRoom.EnableViewOnly)
+                                {
+                                    <ActionLink Action="View" Parameters="@($"fileid={item.FileId}&dataroomid={_dataRoom.DataRoomId}")" IconName="eye" Text="View" Class="btn btn-sm btn-info text-white me-1">
+                                    </ActionLink>
+                                }
+                                @if (_dataRoom.EnableDownload)
+                                {
+                                    <button class="btn btn-sm btn-primary"
+                                            @onclick="@(async () => await DownloadFileAsync(item.FileId, item.Name))"
+                                            title="Download @item.Name">
+                                        <span class="oi oi-cloud-download me-1"></span>Download
+                                    </button>
+                                }
+                                @if (!_dataRoom.EnableViewOnly && !_dataRoom.EnableDownload)
+                                {
+                                    <span class="text-muted small">Access Restricted</span>
+                                }
+                            }
+                        </td>
+                    }
                 </Row>
             </Pager>
         }
@@ -109,7 +180,7 @@ else
         {
             <div class="text-center text-muted py-5">
                 <div class="oi oi-inbox" style="font-size:2rem;"></div>
-                <p class="mt-2 mb-0">No documents available in this Data Room.</p>
+                <p class="mt-2 mb-0">No documents available in this folder.</p>
             </div>
         }
     </div>
@@ -124,40 +195,71 @@ else
     private bool _initialized;
     private DataRoom _dataRoom;
     private List<Oqtane.Models.File> _files;
+    private List<Folder> _folders = new();
+    private List<FolderBrowserItem> _browserItems = new();
+    private Dictionary<int, Folder> _folderLookup = new();
+    private HashSet<int> _allowedFolderIds = new();
+    private int _rootFolderId;
+    private int _currentFolderId;
+    private string _currentFolderPath = string.Empty;
     private string _ViewRole;
+    private int _numberPerPage = 10;
     private bool _isViewRoleAuthorized = true;
+    private string _sortColumn = "ModifiedOn";
+    private bool _sortDescending = true;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             var settings = await SettingService.GetModuleSettingsAsync(ModuleState.ModuleId);
-            _ViewRole = SettingService.GetSetting(settings, "ViewRole", "Administrators");
-            
+            _ViewRole = SettingService.GetSetting(settings, "ViewRole", "");
+
+            var numberPerPageSetting = SettingService.GetSetting(settings, "NumberPerPage", "10");
+            if (!int.TryParse(numberPerPageSetting, out _numberPerPage) || _numberPerPage < 1)
+            {
+                _numberPerPage = 10;
+            }
+
+            _isViewRoleAuthorized = IsUserAuthorizedForViewRole(_ViewRole);
+            if (!_isViewRoleAuthorized)
+            {
+                await NotifyUnauthorizedAccessAsync();
+                _initialized = true;
+                return;
+            }
+
             var rooms = await DataRoomService.GetDataRoomsAsync(ModuleState.ModuleId);
             _dataRoom = rooms?.FirstOrDefault(r => r.IsActive) ?? rooms?.FirstOrDefault();
 
-            if (_dataRoom != null)
-            {
-                _isViewRoleAuthorized = IsUserAuthorizedForViewRole(_ViewRole);
-                if (!_isViewRoleAuthorized)
-                {
-                    await NotifyUnauthorizedAccessAsync();
-                    _initialized = true;
-                    return;
-                }
-            }
+            // if (_dataRoom != null)
+            // {
+            //     _isViewRoleAuthorized = IsUserAuthorizedForViewRole(_ViewRole);
+            //     if (!_isViewRoleAuthorized)
+            //     {
+            //         await NotifyUnauthorizedAccessAsync();
+            //         _initialized = true;
+            //         return;
+            //     }
+            // }
 
             if (_dataRoom != null && _dataRoom.IsActive && _dataRoom.FolderId > 0)
             {
                 try
                 {
-                    _files = await FileService.GetFilesAsync(_dataRoom.FolderId);
+                    _folders = await FolderService.GetFoldersAsync(ModuleState.SiteId) ?? new List<Folder>();
+                    _folderLookup = _folders.ToDictionary(f => f.FolderId);
+                    _files = await GetFilesFromFolderHierarchyAsync(_dataRoom.FolderId, _folders);
+
+                    _rootFolderId = _dataRoom.FolderId;
+                    _currentFolderId = _rootFolderId;
+                    BuildBrowserItems();
                 }
                 catch (Exception ex)
                 {
                     await logger.LogError(ex, "Error Loading File List for Data Room (FolderId: {FolderId}) - {Error}", _dataRoom.FolderId, ex.Message);
                     _files = new List<Oqtane.Models.File>();
+                    _browserItems = new List<FolderBrowserItem>();
                     AddModuleMessage("Insufficient permissions to view the contents of this folder. Please contact an administrator.", MessageType.Warning);
                 }
 
@@ -240,6 +342,173 @@ else
         }
     }
 
+    private async Task<List<Oqtane.Models.File>> GetFilesFromFolderHierarchyAsync(int rootFolderId, List<Folder> folders)
+    {
+        var childrenByParent = folders
+            .Where(f => f.ParentId.HasValue)
+            .GroupBy(f => f.ParentId.Value)
+            .ToDictionary(g => g.Key, g => g.Select(f => f.FolderId).ToList());
+
+        var folderIds = new HashSet<int> { rootFolderId };
+        var queue = new Queue<int>();
+        queue.Enqueue(rootFolderId);
+
+        while (queue.Count > 0)
+        {
+            var currentFolderId = queue.Dequeue();
+            if (!childrenByParent.TryGetValue(currentFolderId, out var childIds))
+            {
+                continue;
+            }
+
+            foreach (var childId in childIds)
+            {
+                if (folderIds.Add(childId))
+                {
+                    queue.Enqueue(childId);
+                }
+            }
+        }
+
+        _allowedFolderIds = folderIds;
+
+        var files = new List<Oqtane.Models.File>();
+        foreach (var folderId in folderIds)
+        {
+            var folderFiles = await FileService.GetFilesAsync(folderId) ?? new List<Oqtane.Models.File>();
+            files.AddRange(folderFiles);
+        }
+
+        return files
+            .OrderBy(f => f.Name)
+            .ToList();
+    }
+
+    private bool CanNavigateUp =>
+        _currentFolderId != _rootFolderId &&
+        _folderLookup.TryGetValue(_currentFolderId, out var folder) &&
+        folder.ParentId.HasValue &&
+        _allowedFolderIds.Contains(folder.ParentId.Value);
+
+    private void OpenFolder(int folderId)
+    {
+        if (!_allowedFolderIds.Contains(folderId))
+        {
+            return;
+        }
+
+        _currentFolderId = folderId;
+        BuildBrowserItems();
+    }
+
+    private void OpenParentFolder()
+    {
+        if (!CanNavigateUp)
+        {
+            return;
+        }
+
+        var parentId = _folderLookup[_currentFolderId].ParentId.Value;
+        _currentFolderId = parentId;
+        BuildBrowserItems();
+    }
+
+    private void BuildBrowserItems()
+    {
+        var items = new List<FolderBrowserItem>();
+
+        var childFolders = _folders
+            .Where(f => f.ParentId == _currentFolderId && _allowedFolderIds.Contains(f.FolderId))
+            .OrderBy(f => f.Name)
+            .Select(f => new FolderBrowserItem
+            {
+                IsFolder = true,
+                FolderId = f.FolderId,
+                Name = f.Name
+            });
+
+        items.AddRange(childFolders);
+
+        var currentFolderFiles = (_files ?? new List<Oqtane.Models.File>())
+            .Where(f => f.FolderId == _currentFolderId)
+            .Select(f => new FolderBrowserItem
+            {
+                IsFolder = false,
+                FolderId = f.FolderId,
+                FileId = f.FileId,
+                Name = f.Name,
+                Extension = f.Extension,
+                Size = f.Size,
+                ModifiedOn = f.ModifiedOn
+            })
+            .ToList();
+
+        // Apply sorting based on _sortColumn and _sortDescending
+        currentFolderFiles = ApplySorting(currentFolderFiles);
+        items.AddRange(currentFolderFiles);
+
+        _browserItems = items;
+
+        if (_folderLookup.TryGetValue(_currentFolderId, out var folder))
+        {
+            _currentFolderPath = folder.Path;
+        }
+        else
+        {
+            _currentFolderPath = "Unknown";
+        }
+    }
+
+    private List<FolderBrowserItem> ApplySorting(List<FolderBrowserItem> items)
+    {
+        return _sortColumn switch
+        {
+            "Name" => _sortDescending 
+                ? items.OrderByDescending(x => x.Name).ToList()
+                : items.OrderBy(x => x.Name).ToList(),
+            "Type" => _sortDescending
+                ? items.OrderByDescending(x => x.Extension ?? "").ToList()
+                : items.OrderBy(x => x.Extension ?? "").ToList(),
+            "Size" => _sortDescending
+                ? items.OrderByDescending(x => x.Size).ToList()
+                : items.OrderBy(x => x.Size).ToList(),
+            "ModifiedOn" => _sortDescending
+                ? items.OrderByDescending(x => x.ModifiedOn).ToList()
+                : items.OrderBy(x => x.ModifiedOn).ToList(),
+            _ => _sortDescending
+                ? items.OrderByDescending(x => x.ModifiedOn).ToList()
+                : items.OrderBy(x => x.ModifiedOn).ToList()
+        };
+    }
+
+    private void OnSortColumnChanged(string columnName)
+    {
+        if (_sortColumn == columnName)
+        {
+            // If clicking the same column, toggle the sort direction
+            _sortDescending = !_sortDescending;
+        }
+        else
+        {
+            // If clicking a different column, set it as the new sort column with descending order
+            _sortColumn = columnName;
+            _sortDescending = true;
+        }
+
+        BuildBrowserItems();
+    }
+
+    private class FolderBrowserItem
+    {
+        public bool IsFolder { get; set; }
+        public int FolderId { get; set; }
+        public int FileId { get; set; }
+        public string Name { get; set; }
+        public string Extension { get; set; }
+        public int Size { get; set; }
+        public DateTime ModifiedOn { get; set; }
+    }
+
     private async Task DownloadFileAsync(int fileId, string fileName)
     {
         try
@@ -280,5 +549,27 @@ else
     {
         var url = $"{PageState.Alias.BaseUrl}api/DataRoom/zip/{_dataRoom.DataRoomId}/{ModuleState.ModuleId}?authmoduleid={ModuleState.ModuleId}";
         await JSRuntime.InvokeVoidAsync("open", url, "_blank");
+    }
+
+    private string GetFileTypeIcon(string extension)
+    {
+        return extension switch
+        {
+            "doc" or "docx" => "/_content/GIBS.Module.DataRoom/icons/word.svg",
+            "xls" or "xlsx" => "/_content/GIBS.Module.DataRoom/icons/excel.svg",
+            "ppt" or "pptx" => "/_content/GIBS.Module.DataRoom/icons/powerpoint.svg",
+            _ => "/_content/GIBS.Module.DataRoom/icons/word.svg"
+        };
+    }
+
+    private string GetFileTypeLabel(string extension)
+    {
+        return extension switch
+        {
+            "doc" or "docx" => "Word Document",
+            "xls" or "xlsx" => "Excel Spreadsheet",
+            "ppt" or "pptx" => "PowerPoint Presentation",
+            _ => "Document"
+        };
     }
 }

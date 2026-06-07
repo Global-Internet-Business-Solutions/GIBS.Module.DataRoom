@@ -14,5 +14,7 @@ namespace GIBS.Module.DataRoom.Services
         Task<Models.DataRoom> UpdateDataRoomAsync(Models.DataRoom DataRoom);
 
         Task DeleteDataRoomAsync(int DataRoomId, int ModuleId);
+
+        Task<int> ExtractZipAsync(int DataRoomId, int ModuleId, int ZipFileId);
     }
 }

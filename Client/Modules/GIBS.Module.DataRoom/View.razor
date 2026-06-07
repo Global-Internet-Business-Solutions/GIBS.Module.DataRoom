@@ -132,7 +132,7 @@ else
 
             // Resolve the file metadata
             _file = await FileService.GetFileAsync(fileId);
-            if (_file == null || _file.FolderId != _dataRoom.FolderId)
+            if (_file == null)
             {
                 _error = "Document not found or access denied.";
                 _initialized = true;

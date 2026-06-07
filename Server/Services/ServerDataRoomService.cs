@@ -45,12 +45,26 @@ namespace GIBS.Module.DataRoom.Services
         {
             if (_userPermissions.IsAuthorized(_accessor.HttpContext.User, _alias.SiteId, EntityNames.Module, ModuleId, PermissionNames.View))
             {
-                return Task.FromResult(_DataRoomRepository.GetDataRoom(DataRoomId));
+                var dataRoom = _DataRoomRepository.GetDataRoom(DataRoomId);
+                // Ensure the DataRoom belongs to this module
+                if (dataRoom != null && dataRoom.ModuleId == ModuleId)
+                {
+                    return Task.FromResult(dataRoom);
+                }
+                else if (dataRoom != null)
+                {
+                    _logger.Log(LogLevel.Error, this, LogFunction.Security, "DataRoom {DataRoomId} does not belong to Module {ModuleId}", DataRoomId, ModuleId);
+                    return Task.FromResult<Models.DataRoom>(null);
+                }
+                else
+                {
+                    return Task.FromResult<Models.DataRoom>(null);
+                }
             }
             else
             {
                 _logger.Log(LogLevel.Error, this, LogFunction.Security, "Unauthorized DataRoom Get Attempt {DataRoomId} {ModuleId}", DataRoomId, ModuleId);
-                return null;
+                return Task.FromResult<Models.DataRoom>(null);
             }
         }
 
@@ -96,6 +110,17 @@ namespace GIBS.Module.DataRoom.Services
                 _logger.Log(LogLevel.Error, this, LogFunction.Security, "Unauthorized DataRoom Delete Attempt {DataRoomId} {ModuleId}", DataRoomId, ModuleId);
             }
             return Task.CompletedTask;
+        }
+
+        public Task<int> ExtractZipAsync(int DataRoomId, int ModuleId, int ZipFileId)
+        {
+            var authorized = _userPermissions.IsAuthorized(_accessor.HttpContext.User, _alias.SiteId, EntityNames.Module, ModuleId, PermissionNames.Edit);
+            if (!authorized)
+            {
+                _logger.Log(LogLevel.Error, this, LogFunction.Security, "Unauthorized DataRoom Zip Extract Attempt {DataRoomId} {ModuleId} {ZipFileId}", DataRoomId, ModuleId, ZipFileId);
+            }
+
+            return Task.FromResult(0);
         }
     }
 }

@@ -1,3 +1,4 @@
+@using Oqtane.Modules.Controls
 @namespace GIBS.Module.DataRoom
 @inherits ModuleBase
 @implements Oqtane.Interfaces.ISettingsControl
@@ -7,7 +8,7 @@
 
 <div class="container">
     <div class="row mb-1 align-items-center">
-        <label class="col-sm-3" for="createRole">Create Role</label>
+        <Label Class="col-sm-3" For="createRole" HelpText="Select which role can view the DataRoom" ResourceKey="ViewRole" ResourceType="@resourceType">View Role</Label>
         <div class="col-sm-9">
             <select id="createRole" class="form-select" @bind="@_viewRole">
                 @foreach (var role in _roles)
@@ -17,6 +18,12 @@
             </select>
        </div>
     </div>
+    <div class="row mb-1 align-items-center">
+        <Label Class="col-sm-3" For="numberPerPage" HelpText="Number of rows displayed per page in DataRoom pagers" ResourceKey="NumberPerPage" ResourceType="@resourceType">Number Per Page</Label>
+        <div class="col-sm-9">
+            <input id="numberPerPage" class="form-control" type="number" min="1" step="1" @bind="_numberPerPage" />
+        </div>
+    </div>
 </div>
 
 @code {
@@ -25,6 +32,7 @@
 
     
     private string _viewRole;
+    private int _numberPerPage = 20;
 
     private List<Role> _roles { get; set; } = new List<Role>();
 
@@ -35,15 +43,21 @@
             if (UserSecurity.IsAuthorized(PageState.User, RoleNames.Host))
             {
                 _roles = await RoleService.GetRolesAsync(PageState.Site.SiteId, true);
-                _roles.RemoveAll(item => item.Name == RoleNames.Everyone || item.Name == RoleNames.Unauthenticated);
+                _roles.RemoveAll(item => item.Name == RoleNames.Unauthenticated);
             }
             else
             {
                 _roles = await RoleService.GetRolesAsync(PageState.Site.SiteId);
-                _roles.RemoveAll(item => item.Name == RoleNames.Everyone || item.Name == RoleNames.Unauthenticated);
+                _roles.RemoveAll(item => item.Name == RoleNames.Unauthenticated);
             }
             Dictionary<string, string> settings = await SettingService.GetModuleSettingsAsync(ModuleState.ModuleId);
             _viewRole = SettingService.GetSetting(settings, "ViewRole", "");
+
+            var numberPerPageSetting = SettingService.GetSetting(settings, "NumberPerPage", "10");
+            if (!int.TryParse(numberPerPageSetting, out _numberPerPage) || _numberPerPage < 1)
+            {
+                _numberPerPage = 10;
+            }
         }
         catch (Exception ex)
         {
@@ -57,6 +71,7 @@
         {
             var settings = await SettingService.GetModuleSettingsAsync(ModuleState.ModuleId);
             settings = SettingService.SetSetting(settings, "ViewRole", _viewRole);
+            settings = SettingService.SetSetting(settings, "NumberPerPage", _numberPerPage > 0 ? _numberPerPage.ToString() : "10");
             await SettingService.UpdateModuleSettingsAsync(settings, ModuleState.ModuleId);
         }
         catch (Exception ex)
