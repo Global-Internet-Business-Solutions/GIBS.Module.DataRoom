@@ -330,6 +330,7 @@
     private HashSet<int> _allowedFolderIds = new();
     private int _rootFolderId;
     private int _currentFolderId;
+    private string _currentFolderPath = string.Empty;
     private int _numberPerPage = 10;
     private string _sortColumn = "ModifiedOn";
     private bool _sortDescending = true;
@@ -727,10 +728,29 @@
         {
             return;
         }
-
+        _dataRoom.FolderId = folderId; // Update the DataRoom's current folder for context (not necessarily needed if we rely on _currentFolderId, but keeps it in sync)
         _currentFolderId = folderId;
         BuildBrowserItems();
+
     }
+
+    private void OpenParentFolder()
+    {
+        if (!CanNavigateUp)
+        {
+            return;
+        }
+
+        var parentId = _folderLookup[_currentFolderId].ParentId.Value;
+        _currentFolderId = parentId;
+        BuildBrowserItems();
+    }
+
+    private bool CanNavigateUp =>
+        _currentFolderId != _rootFolderId &&
+        _folderLookup.TryGetValue(_currentFolderId, out var folder) &&
+        folder.ParentId.HasValue &&
+        _allowedFolderIds.Contains(folder.ParentId.Value);
 
     private void BuildBrowserItems()
     {
@@ -767,6 +787,15 @@
         items.AddRange(currentFolderFiles);
 
         _browserItems = items;
+
+        if (_folderLookup.TryGetValue(_currentFolderId, out var folder))
+        {
+            _currentFolderPath = folder.Path;
+        }
+        else
+        {
+            _currentFolderPath = "Unknown";
+        }
     }
 
     private List<FolderBrowserItem> ApplySorting(List<FolderBrowserItem> items)
