@@ -28,13 +28,13 @@
                 <hr />
 
                  <div class="mb-3">
-                     <div class="form-check">
-                         <input type="checkbox" class="form-check-input" id="enableZipExtraction" @bind="_enableZipExtraction" />
-                         <label class="form-check-label" for="enableZipExtraction">
-                             Enable Automatic ZIP Extraction
+                     <div class="form-check form-switch">
+                         <input type="checkbox" class="form-check-input" id="enableZipExtraction" @bind="_enableZipExtraction" style="width: 3rem; height: 1.5rem; cursor: pointer;" />
+                         <label class="form-check-label" for="enableZipExtraction" style="cursor: pointer;">
+                             Enable Zip Extraction
                          </label>
-                         <small class="form-text text-muted d-block">
-                             If checked, uploaded ZIP files will be automatically extracted into the folder structure.
+                         <small class="form-text text-muted d-block mt-2">
+                             If enabled, uploaded ZIP files will be automatically extracted into the folder structure.
                          </small>
                      </div>
                  </div>
@@ -99,7 +99,7 @@
                                 <td></td>
                                 <td class="text-end">
                                     <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => OpenFolder(item.FolderId)">Open</button>
-                                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => OpenRenameFileDialog(item.FolderId, item.Name, false)">Rename</button>
+                                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => OpenRenameFileDialog(item.FolderId, item.Name, false)"><i class="oi oi-pencil"></i></button>
                                 </td>
                             }
                             else
@@ -359,7 +359,7 @@
     private string _activeTab = "Documents";
 
     // ZIP extraction state
-    private bool _enableZipExtraction = false;
+    private bool _enableZipExtraction = true;
 
     // File browser state
     private List<File> _files;
@@ -542,6 +542,8 @@
                                 AddModuleMessage($"Error extracting ZIP: {response.StatusCode}", MessageType.Error);
                             }
                         }
+
+                        _folders = await FolderService.GetFoldersAsync(ModuleState.SiteId); // Refresh folder list in case new folders were created during extraction
                     }
                     catch (Exception ex)
                     {
