@@ -20,8 +20,8 @@
            
             @if (_dataRoom != null && _dataRoom.FolderId > 0)
             {
-                <FileManager FolderId="@_dataRoom.FolderId"
-                         ShowFolders="false" ShowFiles="false"
+            <FileManager FolderId="@_currentFolderId"
+                         ShowFolders="true" ShowFiles="true"
                              UploadMultiple="true"
                              ShowSuccess="true"
                              OnUpload="HandleUploadAsync" />
@@ -47,7 +47,7 @@
                 {
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <span class="text-muted small"><b>Current Folder:</b> @_currentFolderPath</span>
-                @if (CanNavigateUp)
+                @if (_currentFolderId != _rootFolderId)
                 {
                     <button class="btn btn-sm btn-outline-secondary" @onclick="OpenParentFolder">
                         <span class="oi oi-arrow-thick-left me-1"></span>Up One Level
@@ -343,6 +343,7 @@
     private int _numberPerPage = 10;
     private string _sortColumn = "ModifiedOn";
     private bool _sortDescending = true;
+    //private string _currentFolder;
 
     protected override async Task OnInitializedAsync()
     {
@@ -528,7 +529,7 @@
             // Refresh log tab and browser
             _activityLogs = await ActivityLogService.GetActivityLogsAsync(_dataRoom.DataRoomId, ModuleState.ModuleId);
             await LoadUserDisplayNamesAsync();
-            await RefreshBrowserAsync();
+            await RefreshCurrentFolderAsync();
             StateHasChanged();
         }
         catch (Exception ex)
@@ -737,8 +738,8 @@
         {
             return;
         }
-        _dataRoom.FolderId = folderId; // Update the DataRoom's current folder for context (not necessarily needed if we rely on _currentFolderId, but keeps it in sync)
-        _currentFolderId = folderId;
+        _currentFolderId = folderId; // Update the DataRoom's current folder for context (not necessarily needed if we rely on _currentFolderId, but keeps it in sync)
+
         BuildBrowserItems();
 
     }
@@ -751,8 +752,8 @@
         }
 
         var parentId = _folderLookup[_currentFolderId].ParentId.Value;
-        _currentFolderId = parentId;
-        _dataRoom.FolderId = parentId; // Update the DataRoom's current folder for context
+
+        _currentFolderId = parentId; // Update the DataRoom's current folder for context
         BuildBrowserItems();
     }
 
@@ -922,28 +923,39 @@
 
         try
         {
-            var previousFolderId = _currentFolderId; // Preserve current folder selection
             _rootFolderId = _dataRoom.FolderId;
-            if (_currentFolderId == 0) // Only set to root if we haven't initialized yet
-            {
-                _currentFolderId = _rootFolderId;
-            }
+            _currentFolderId = _rootFolderId;
 
             _folders = await FolderService.GetFoldersAsync(ModuleState.SiteId);
             _folderLookup = _folders.ToDictionary(f => f.FolderId);
 
             _files = await GetFilesFromFolderHierarchyAsync(_rootFolderId, _folders);
-            _currentFolderId = previousFolderId; // Restore the previous folder if it still exists
-            if (!_allowedFolderIds.Contains(_currentFolderId))
-            {
-                _currentFolderId = _rootFolderId; // Fall back to root if previous folder is no longer accessible
-            }
             BuildBrowserItems();
         }
         catch (Exception ex)
         {
             await logger.LogError(ex, "Error loading files and folders");
             AddModuleMessage("Error loading files and folders.", MessageType.Error);
+        }
+    }
+
+    private async Task RefreshCurrentFolderAsync()
+    {
+        if (_dataRoom == null || _dataRoom.FolderId <= 0)
+        {
+            return;
+        }
+
+        try
+        {
+            // Only reload files, preserving folder structure and current location
+            _files = await GetFilesFromFolderHierarchyAsync(_rootFolderId, _folders);
+            BuildBrowserItems();
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error loading files");
+            AddModuleMessage("Error loading files.", MessageType.Error);
         }
     }
 
