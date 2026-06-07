@@ -12,6 +12,7 @@
 @inject IUserService UserService
 @inject ISettingService SettingService
 @inject NavigationManager NavigationManager
+@inject HttpClient HttpClient
 
 <TabStrip ActiveTab="@_activeTab">
        <TabPanel Name="Documents" Heading="Documents" ResourceKey="Documents">
@@ -20,7 +21,7 @@
             @if (_dataRoom != null && _dataRoom.FolderId > 0)
             {
                 <FileManager FolderId="@_dataRoom.FolderId"
-                             ShowFolders="false"
+                             ShowFolders="true"
                              UploadMultiple="true"
                              ShowSuccess="true"
                              OnUpload="HandleUploadAsync" />
@@ -659,17 +660,32 @@
                 ? _renameItemName
                 : _renameItemName + _renameFileExtension;
 
-            // Call service to rename (will implement server endpoint next)
-            // For now, just close the dialog
-            _showRenameFileDialog = false;
-            _renameItemName = string.Empty;
-            _renameFileExtension = string.Empty;
-            _renameFileId = 0;
+            // Call server endpoint to rename file
+            var url = $"{PageState.Alias.BaseUrl}api/DataRoom/Rename?authmoduleid={ModuleState.ModuleId}";
+            using (var response = await HttpClient.PostAsJsonAsync(url, 
+                new { fileId = _renameFileId, dataRoomId = _dataRoom.DataRoomId, moduleId = ModuleState.ModuleId, newName = _renameItemName }))
+            {
+                if (response.IsSuccessStatusCode)
+                {
+                    _showRenameFileDialog = false;
+                    _renameItemName = string.Empty;
+                    _renameFileExtension = string.Empty;
+                    _renameFileId = 0;
 
-            AddModuleMessage($"Item renamed to: {newName}", MessageType.Success);
+                    // Refresh the browser to show the renamed file
+                    await RefreshBrowserAsync();
+                    AddModuleMessage($"Item renamed to: {newName}", MessageType.Success);
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    AddModuleMessage($"Error renaming item: {response.StatusCode}", MessageType.Error);
+                }
+            }
         }
         catch (Exception ex)
         {
+            await logger.LogError(ex, "Error renaming file {FileId}", _renameFileId);
             AddModuleMessage($"Error renaming item: {ex.Message}", MessageType.Error);
         }
     }

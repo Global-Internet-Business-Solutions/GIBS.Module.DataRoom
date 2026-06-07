@@ -429,6 +429,82 @@ namespace GIBS.Module.DataRoom.Controllers
             return PhysicalFile(filePath, GetContentType(file.Extension, file.Name));
         }
 
+        [HttpPost("Rename")]
+        [Authorize(Policy = PolicyNames.EditModule)]
+        public async Task<IActionResult> Rename([FromBody] RenameRequest request)
+        {
+            if (!IsAuthorizedEntityId(EntityNames.Module, request.ModuleId))
+            {
+                _logger.Log(LogLevel.Error, this, LogFunction.Security, "Unauthorized Rename Attempt {FileId}", request.FileId);
+                return StatusCode((int)HttpStatusCode.Forbidden);
+            }
+
+            if (string.IsNullOrWhiteSpace(request.NewName))
+            {
+                return BadRequest("New name cannot be empty.");
+            }
+
+            var dataRoom = await _DataRoomService.GetDataRoomAsync(request.DataRoomId, request.ModuleId);
+            if (dataRoom == null) return NotFound();
+
+            var file = _fileRepository.GetFile(request.FileId, false);
+            if (file == null)
+            {
+                _logger.Log(LogLevel.Error, this, LogFunction.Security, "File {FileId} Not Found", request.FileId);
+                return StatusCode((int)HttpStatusCode.Forbidden);
+            }
+
+            // Check if file belongs to DataRoom or any subfolder
+            var allowedFolderIds = GetAllowedFolderIds(dataRoom.FolderId, dataRoom.SiteId);
+            if (!allowedFolderIds.Contains(file.FolderId))
+            {
+                _logger.Log(LogLevel.Error, this, LogFunction.Security, "File {FileId} Does Not Belong To DataRoom {DataRoomId}", request.FileId, request.DataRoomId);
+                return StatusCode((int)HttpStatusCode.Forbidden);
+            }
+
+            try
+            {
+                // Validate extension is not being removed
+                var originalExtension = Path.GetExtension(file.Name);
+                var newNameWithExt = request.NewName;
+                if (!string.IsNullOrEmpty(originalExtension) && !newNameWithExt.EndsWith(originalExtension, StringComparison.OrdinalIgnoreCase))
+                {
+                    newNameWithExt = request.NewName + originalExtension;
+                }
+
+                // Get old file path
+                var oldFilePath = _fileRepository.GetFilePath(file);
+
+                // Update file name in database
+                file.Name = newNameWithExt;
+                _fileRepository.UpdateFile(file);
+
+                // Rename the physical file
+                if (System.IO.File.Exists(oldFilePath))
+                {
+                    var newFilePath = Path.Combine(Path.GetDirectoryName(oldFilePath), newNameWithExt);
+                    System.IO.File.Move(oldFilePath, newFilePath);
+                }
+
+                _logger.Log(LogLevel.Information, this, LogFunction.Update, "File {FileId} Renamed From {OldName} To {NewName}", request.FileId, file.Name, newNameWithExt);
+
+                return Ok(new { success = true, message = "File renamed successfully." });
+            }
+            catch (Exception ex)
+            {
+                _logger.Log(LogLevel.Error, this, LogFunction.Update, "Error Renaming File {FileId}: {Error}", request.FileId, ex.Message);
+                return StatusCode((int)HttpStatusCode.InternalServerError, new { success = false, message = "Error renaming file." });
+            }
+        }
+
+        public class RenameRequest
+        {
+            public int FileId { get; set; }
+            public int DataRoomId { get; set; }
+            public int ModuleId { get; set; }
+            public string NewName { get; set; }
+        }
+
         private HashSet<int> GetAllowedFolderIds(int rootFolderId, int siteId)
         {
             var folders = _folderRepository.GetFolders(siteId).ToList();
