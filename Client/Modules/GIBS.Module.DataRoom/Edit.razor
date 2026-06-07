@@ -751,10 +751,14 @@
             return;
         }
 
-        var parentId = _folderLookup[_currentFolderId].ParentId.Value;
-
-        _currentFolderId = parentId; // Update the DataRoom's current folder for context
-        BuildBrowserItems();
+        // Safe access since CanNavigateUp already validated the structure
+        if (_folderLookup.TryGetValue(_currentFolderId, out var currentFolder) && 
+            currentFolder.ParentId.HasValue)
+        {
+            var parentId = currentFolder.ParentId.Value;
+            _currentFolderId = parentId;
+            BuildBrowserItems();
+        }
     }
 
     private bool CanNavigateUp =>
