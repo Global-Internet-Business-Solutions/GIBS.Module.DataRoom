@@ -488,8 +488,8 @@
                     try
                     {
                         // Call server endpoint to extract ZIP
-                        var url = $"{PageState.Alias.BaseUrl}api/DataRoom/Extract/{_dataRoom.DataRoomId}/{ModuleState.ModuleId}/{fileId}?authmoduleid={ModuleState.ModuleId}";
-                        using (var response = await HttpClient.PostAsync(url, null))
+                        var url = $"{PageState.Alias.BaseUrl}api/DataRoom/extract/{_dataRoom.DataRoomId}/{ModuleState.ModuleId}/{fileId}";
+                        using (var response = await HttpClient.PutAsync(url, null))
                         {
                             if (response.IsSuccessStatusCode)
                             {
