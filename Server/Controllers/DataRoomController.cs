@@ -429,6 +429,59 @@ namespace GIBS.Module.DataRoom.Controllers
             return PhysicalFile(filePath, GetContentType(file.Extension, file.Name));
         }
 
+        [HttpPost("DeleteFile")]
+        [Authorize(Policy = PolicyNames.EditModule)]
+        public async Task<IActionResult> DeleteFile([FromBody] DeleteFileRequest request)
+        {
+            if (!IsAuthorizedEntityId(EntityNames.Module, request.ModuleId))
+            {
+                _logger.Log(LogLevel.Error, this, LogFunction.Security, "Unauthorized DeleteFile Attempt FileId:{FileId}", request.FileId);
+                return StatusCode((int)HttpStatusCode.Forbidden);
+            }
+
+            var dataRoom = await _DataRoomService.GetDataRoomAsync(request.DataRoomId, request.ModuleId);
+            if (dataRoom == null) return NotFound();
+
+            var file = _fileRepository.GetFile(request.FileId, false);
+            if (file == null)
+            {
+                _logger.Log(LogLevel.Error, this, LogFunction.Security, "File {FileId} Not Found", request.FileId);
+                return StatusCode((int)HttpStatusCode.Forbidden);
+            }
+
+            // Check if file belongs to DataRoom or any subfolder
+            var allowedFolderIds = GetAllowedFolderIds(dataRoom.FolderId, dataRoom.SiteId);
+            if (!allowedFolderIds.Contains(file.FolderId))
+            {
+                _logger.Log(LogLevel.Error, this, LogFunction.Security, "File {FileId} Does Not Belong To DataRoom {DataRoomId}", request.FileId, request.DataRoomId);
+                return StatusCode((int)HttpStatusCode.Forbidden);
+            }
+
+            try
+            {
+                var fileName = file.Name;
+                var filePath = _fileRepository.GetFilePath(file);
+
+                // Delete file record from database
+                _fileRepository.DeleteFile(file.FileId);
+
+                // Delete physical file
+                if (!string.IsNullOrWhiteSpace(filePath) && System.IO.File.Exists(filePath))
+                {
+                    System.IO.File.Delete(filePath);
+                }
+
+                _logger.Log(LogLevel.Information, this, LogFunction.Delete, "File {FileId} ({FileName}) Deleted", request.FileId, fileName);
+
+                return Ok(new { success = true, message = "File deleted successfully." });
+            }
+            catch (Exception ex)
+            {
+                _logger.Log(LogLevel.Error, this, LogFunction.Delete, "Error Deleting File {FileId}: {Error}", request.FileId, ex.Message);
+                return StatusCode((int)HttpStatusCode.InternalServerError, new { success = false, message = "Error deleting file." });
+            }
+        }
+
         [HttpPost("Rename")]
         [Authorize(Policy = PolicyNames.EditModule)]
         public async Task<IActionResult> Rename([FromBody] RenameRequest request)
@@ -543,6 +596,13 @@ namespace GIBS.Module.DataRoom.Controllers
                 _logger.Log(LogLevel.Error, this, LogFunction.Update, "Error Renaming File {FileId}: {Error}", request.FileId, ex.Message);
                 return StatusCode((int)HttpStatusCode.InternalServerError, new { success = false, message = "Error renaming file." });
             }
+        }
+
+        public class DeleteFileRequest
+        {
+            public int FileId { get; set; }
+            public int DataRoomId { get; set; }
+            public int ModuleId { get; set; }
         }
 
         public class RenameRequest

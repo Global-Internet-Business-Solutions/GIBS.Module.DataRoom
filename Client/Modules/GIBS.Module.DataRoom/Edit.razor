@@ -17,7 +17,7 @@
 <TabStrip ActiveTab="@_activeTab">
        <TabPanel Name="Documents" Heading="Documents" ResourceKey="Documents">
 
-            <p>FIRST_PANEL</p>
+           
             @if (_dataRoom != null && _dataRoom.FolderId > 0)
             {
                 <FileManager FolderId="@_dataRoom.FolderId"
@@ -30,12 +30,10 @@
                  <div class="mb-3">
                      <div class="form-check form-switch">
                          <input type="checkbox" class="form-check-input" id="enableZipExtraction" @bind="_enableZipExtraction" style="width: 3rem; height: 1.5rem; cursor: pointer;" />
-                         <label class="form-check-label" for="enableZipExtraction" style="cursor: pointer;">
+                        &nbsp;<label class="form-check-label" for="enableZipExtraction" style="cursor: pointer;">
                              Enable Zip Extraction
                          </label>
-                         <small class="form-text text-muted d-block mt-2">
-                             If enabled, uploaded ZIP files will be automatically extracted into the folder structure.
-                         </small>
+                       
                      </div>
                  </div>
 
@@ -99,7 +97,6 @@
                                 <td></td>
                                 <td class="text-end">
                                     <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => OpenFolder(item.FolderId)">Open</button>
-                                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => OpenRenameFileDialog(item.FolderId, item.Name, false)"><i class="oi oi-pencil"></i></button>
                                 </td>
                             }
                             else
@@ -111,42 +108,7 @@
                                 <td class="text-nowrap">@FormatSize(item.Size)</td>
                                 <td class="text-nowrap">@UtcToLocal(item.ModifiedOn)?.ToString("g")</td>
                                 <td class="text-end">
-                                    @{
-                                        var ext = item.Extension?.TrimStart('.').ToLower() ?? string.Empty;
-                                        var isOfficeDoc = new[] { "doc", "docx", "xls", "xlsx", "ppt", "pptx" }.Contains(ext);
-                                    }
-                                    @if (isOfficeDoc)
-                                    {
-                                        <img src="@GetFileTypeIcon(ext)" alt="@GetFileTypeLabel(ext)" style="height: 1.5rem; width: 1.5rem; margin-right: 0.5rem;" title="@GetFileTypeLabel(ext)" />
-                                        @if (_dataRoom?.EnableDownload ?? false)
-                                        {
-                                            <button class="btn btn-sm btn-primary me-1"
-                                                    @onclick="@(async () => await DownloadFileAsync(item.FileId, item.Name))"
-                                                    title="Download @item.Name">
-                                                <span class="oi oi-cloud-download me-1"></span>Download
-                                            </button>
-                                        }
-                                    }
-                                    else
-                                    {
-                                        @if (_dataRoom?.EnableViewOnly ?? false)
-                                        {
-                                            <ActionLink Action="View" Parameters="@($"fileid={item.FileId}&dataroomid={_dataRoom.DataRoomId}")" IconName="eye" Text="View" Class="btn btn-sm btn-info text-white me-1"></ActionLink>
-                                        }
-                                        @if (_dataRoom?.EnableDownload ?? false)
-                                        {
-                                            <button class="btn btn-sm btn-primary me-1"
-                                                    @onclick="@(async () => await DownloadFileAsync(item.FileId, item.Name))"
-                                                    title="Download @item.Name">
-                                                <span class="oi oi-cloud-download me-1"></span>Download
-                                            </button>
-                                        }
-                                        @if (!(_dataRoom?.EnableViewOnly ?? false) && !(_dataRoom?.EnableDownload ?? false))
-                                        {
-                                            <span class="text-muted small">Access Restricted</span>
-                                        }
-                                    }
-                                    <button class="btn btn-sm btn-outline-secondary ms-1" @onclick="() => OpenRenameFileDialog(item.FileId, item.Name, true)">Rename</button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteFile(item.FileId)"><i class="oi oi-trash"></i></button>
                                 </td>
                             }
                         </Row>
@@ -934,6 +896,42 @@
         {
             await logger.LogError(ex, "Error loading files and folders");
             AddModuleMessage("Error loading files and folders.", MessageType.Error);
+        }
+    }
+
+    private async Task DeleteFile(int fileId)
+    {
+        try
+        {
+            if (_dataRoom == null) return;
+
+            var request = new
+            {
+                fileId = fileId,
+                dataRoomId = _dataRoom.DataRoomId,
+                moduleId = ModuleState.ModuleId
+            };
+
+            var response = await HttpClient.PostAsJsonAsync($"/api/DataRoom/DeleteFile", request);
+
+            if (response.IsSuccessStatusCode)
+            {
+                _showRenameFileDialog = false;
+
+                // Refresh the browser to show the deleted item is gone
+                await RefreshBrowserAsync();
+                AddModuleMessage($"File deleted successfully.", MessageType.Success);
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                AddModuleMessage($"Error deleting file: {response.StatusCode}", MessageType.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error deleting file {FileId}", fileId);
+            AddModuleMessage($"Error deleting file: {ex.Message}", MessageType.Error);
         }
     }
 
