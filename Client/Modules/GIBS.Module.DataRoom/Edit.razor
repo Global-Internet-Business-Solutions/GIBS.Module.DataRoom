@@ -76,6 +76,7 @@
                             @if (item.IsFolder)
                             {
                                 <td>
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => OpenRenameFileDialog(item.FolderId, item.Name, false)"><i class="oi oi-pencil"></i></button>
                                     <button class="btn btn-link btn-sm p-0 text-start" @onclick="() => OpenFolder(item.FolderId)">
                                         <span class="oi oi-folder me-1"></span>@item.Name
                                     </button>
@@ -84,12 +85,15 @@
                                 <td></td>
                                 <td></td>
                                 <td class="text-end">
-                                    <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenFolder(item.FolderId)">Open</button>
+                                    <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => OpenFolder(item.FolderId)">Open</button>
+                                   
                                 </td>
                             }
                             else
                             {
-                                <td>@item.Name</td>
+                                <td>
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => OpenRenameFileDialog(item.FileId, item.Name, true)"><i class="oi oi-pencil"></i></button>
+                                @item.Name</td>
                                 <td><span class="badge bg-light text-dark border">@item.Extension?.TrimStart('.').ToUpper()</span></td>
                                 <td class="text-nowrap">@FormatSize(item.Size)</td>
                                 <td class="text-nowrap">@UtcToLocal(item.ModifiedOn)?.ToString("g")</td>
@@ -338,6 +342,7 @@
     private int _renameFileId = 0;
     private string _renameItemName = string.Empty;
     private string _renameFileExtension = string.Empty;
+    private bool _renameIsFolder = false;
     private string _activeTab = "Documents";
 
     // File browser state
@@ -605,6 +610,7 @@
     private void OpenRenameFileDialog(int fileId, string currentName, bool isFile = true)
     {
         _renameFileId = fileId;
+        _renameIsFolder = !isFile;
 
         if (isFile)
         {
@@ -637,6 +643,7 @@
         _renameItemName = string.Empty;
         _renameFileExtension = string.Empty;
         _renameFileId = 0;
+        _renameIsFolder = false;
     }
 
     private async Task RenameItemAsync()
@@ -647,8 +654,8 @@
             return;
         }
 
-        // Validate no dots in the input (extension protection)
-        if (_renameItemName.Contains("."))
+        // Validate no dots in the input for files (extension protection)
+        if (!_renameIsFolder && _renameItemName.Contains("."))
         {
             AddModuleMessage("Name cannot contain a period (.). The file extension will be added automatically.", MessageType.Warning);
             return;
@@ -660,10 +667,17 @@
                 ? _renameItemName
                 : _renameItemName + _renameFileExtension;
 
-            // Call server endpoint to rename file
+            // Call server endpoint to rename file or folder
             var url = $"{PageState.Alias.BaseUrl}api/DataRoom/Rename?authmoduleid={ModuleState.ModuleId}";
             using (var response = await HttpClient.PostAsJsonAsync(url, 
-                new { fileId = _renameFileId, dataRoomId = _dataRoom.DataRoomId, moduleId = ModuleState.ModuleId, newName = _renameItemName }))
+                new { 
+                    fileId = _renameIsFolder ? 0 : _renameFileId, 
+                    folderId = _renameIsFolder ? _renameFileId : 0, 
+                    dataRoomId = _dataRoom.DataRoomId, 
+                    moduleId = ModuleState.ModuleId, 
+                    newName = _renameItemName,
+                    isFolder = _renameIsFolder
+                }))
             {
                 if (response.IsSuccessStatusCode)
                 {
@@ -671,8 +685,9 @@
                     _renameItemName = string.Empty;
                     _renameFileExtension = string.Empty;
                     _renameFileId = 0;
+                    _renameIsFolder = false;
 
-                    // Refresh the browser to show the renamed file
+                    // Refresh the browser to show the renamed item
                     await RefreshBrowserAsync();
                     AddModuleMessage($"Item renamed to: {newName}", MessageType.Success);
                 }
@@ -685,7 +700,7 @@
         }
         catch (Exception ex)
         {
-            await logger.LogError(ex, "Error renaming file {FileId}", _renameFileId);
+            await logger.LogError(ex, "Error renaming item {ItemId}", _renameFileId);
             AddModuleMessage($"Error renaming item: {ex.Message}", MessageType.Error);
         }
     }

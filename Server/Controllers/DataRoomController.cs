@@ -435,7 +435,7 @@ namespace GIBS.Module.DataRoom.Controllers
         {
             if (!IsAuthorizedEntityId(EntityNames.Module, request.ModuleId))
             {
-                _logger.Log(LogLevel.Error, this, LogFunction.Security, "Unauthorized Rename Attempt {FileId}", request.FileId);
+                _logger.Log(LogLevel.Error, this, LogFunction.Security, "Unauthorized Rename Attempt FileId:{FileId} FolderId:{FolderId}", request.FileId, request.FolderId);
                 return StatusCode((int)HttpStatusCode.Forbidden);
             }
 
@@ -447,6 +447,54 @@ namespace GIBS.Module.DataRoom.Controllers
             var dataRoom = await _DataRoomService.GetDataRoomAsync(request.DataRoomId, request.ModuleId);
             if (dataRoom == null) return NotFound();
 
+            // Handle folder rename
+            if (request.IsFolder)
+            {
+                return await RenameFolderAsync(request, dataRoom);
+            }
+            else
+            {
+                // Handle file rename
+                return RenameFile(request, dataRoom);
+            }
+        }
+
+        private async Task<IActionResult> RenameFolderAsync(RenameRequest request, Models.DataRoom dataRoom)
+        {
+            var folder = _folderRepository.GetFolder(request.FolderId);
+            if (folder == null)
+            {
+                _logger.Log(LogLevel.Error, this, LogFunction.Security, "Folder {FolderId} Not Found", request.FolderId);
+                return StatusCode((int)HttpStatusCode.Forbidden);
+            }
+
+            // Check if folder belongs to DataRoom or any subfolder
+            var allowedFolderIds = GetAllowedFolderIds(dataRoom.FolderId, dataRoom.SiteId);
+            if (!allowedFolderIds.Contains(folder.FolderId))
+            {
+                _logger.Log(LogLevel.Error, this, LogFunction.Security, "Folder {FolderId} Does Not Belong To DataRoom {DataRoomId}", request.FolderId, request.DataRoomId);
+                return StatusCode((int)HttpStatusCode.Forbidden);
+            }
+
+            try
+            {
+                var oldName = folder.Name;
+                folder.Name = request.NewName;
+                _folderRepository.UpdateFolder(folder);
+
+                _logger.Log(LogLevel.Information, this, LogFunction.Update, "Folder {FolderId} Renamed From {OldName} To {NewName}", request.FolderId, oldName, request.NewName);
+
+                return Ok(new { success = true, message = "Folder renamed successfully." });
+            }
+            catch (Exception ex)
+            {
+                _logger.Log(LogLevel.Error, this, LogFunction.Update, "Error Renaming Folder {FolderId}: {Error}", request.FolderId, ex.Message);
+                return StatusCode((int)HttpStatusCode.InternalServerError, new { success = false, message = "Error renaming folder." });
+            }
+        }
+
+        private IActionResult RenameFile(RenameRequest request, Models.DataRoom dataRoom)
+        {
             var file = _fileRepository.GetFile(request.FileId, false);
             if (file == null)
             {
@@ -500,9 +548,11 @@ namespace GIBS.Module.DataRoom.Controllers
         public class RenameRequest
         {
             public int FileId { get; set; }
+            public int FolderId { get; set; }
             public int DataRoomId { get; set; }
             public int ModuleId { get; set; }
             public string NewName { get; set; }
+            public bool IsFolder { get; set; }
         }
 
         private HashSet<int> GetAllowedFolderIds(int rootFolderId, int siteId)
