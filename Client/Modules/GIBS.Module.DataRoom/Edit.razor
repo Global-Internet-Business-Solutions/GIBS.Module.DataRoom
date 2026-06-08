@@ -27,19 +27,17 @@
                              OnUpload="HandleUploadAsync" />
                 <hr />
 
-                 <div class="mb-3">
-                     <div class="form-check form-switch">
-                         <input type="checkbox" class="form-check-input" id="enableZipExtraction" @bind="_enableZipExtraction" style="width: 3rem; height: 1.5rem; cursor: pointer;" />
-                        &nbsp;<label class="form-check-label" for="enableZipExtraction" style="cursor: pointer;">
-                             Enable Zip Extraction
-                         </label>
-                       
-                     </div>
-                 </div>
-
-                <button class="btn btn-outline-secondary btn-sm" @onclick="DownloadZipAsync">
-                    <span class="oi oi-data-transfer-download me-1"></span>Download All (ZIP)
-                </button>
+                <div class="d-flex justify-content-between align-items-center my-3">
+                    <div class="form-check form-switch">
+                        <input type="checkbox" class="form-check-input" id="enableZipExtraction" @bind="_enableZipExtraction" style="width: 3rem; height: 1.5rem; cursor: pointer;" />
+                        <label class="form-check-label" for="enableZipExtraction" style="cursor: pointer;">
+                            Enable Zip Extraction
+                        </label>
+                    </div>
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="DownloadZipAsync">
+                        <span class="oi oi-data-transfer-download me-1"></span>Download All (ZIP)
+                    </button>
+                </div>
 
                 <hr />
 
