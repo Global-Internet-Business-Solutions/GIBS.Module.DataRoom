@@ -983,8 +983,8 @@
             {
                 _showRenameFileDialog = false;
 
-                // Refresh the browser to show the deleted item is gone
-                await RefreshBrowserAsync();
+                // Refresh the current folder to show the deleted item is gone, while staying in the same folder
+                await RefreshCurrentFolderAsync();
                 AddModuleMessage($"File deleted successfully.", MessageType.Success);
             }
             else
