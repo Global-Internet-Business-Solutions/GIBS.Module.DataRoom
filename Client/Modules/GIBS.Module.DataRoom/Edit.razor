@@ -23,15 +23,15 @@
             <FileManager FolderId="@_currentFolderId"
                          ShowFolders="true" ShowFiles="true"
                              UploadMultiple="true"
-                             ShowSuccess="true"
+                             ShowSuccess="false"
                              OnUpload="HandleUploadAsync" />
                 <hr />
 
                 <div class="d-flex justify-content-between align-items-center my-3">
                     <div class="form-check form-switch">
-                        <input type="checkbox" class="form-check-input" id="enableZipExtraction" @bind="_enableZipExtraction" style="width: 3rem; height: 1.5rem; cursor: pointer;" />
+                        <input type="checkbox" class="form-check-input" id="enableZipExtraction" @bind="_enableZipExtraction"  />
                         <label class="form-check-label" for="enableZipExtraction" style="cursor: pointer;">
-                            Enable Zip Extraction
+                        &nbsp; Enable Zip Extraction
                         </label>
                     </div>
                     <button class="btn btn-outline-secondary btn-sm" @onclick="DownloadZipAsync">
@@ -551,7 +551,8 @@
             return;
         }
 
-        var files = await FileService.GetFilesAsync(_dataRoom.FolderId);
+        // Load all files from the entire folder hierarchy, not just the root
+        var files = await GetFilesFromFolderHierarchyAsync(_dataRoom.FolderId, _folders);
         if (files == null)
         {
             return;
