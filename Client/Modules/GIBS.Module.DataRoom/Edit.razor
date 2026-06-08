@@ -504,8 +504,12 @@
                             {
                                 AddModuleMessage($"ZIP file '{fileName}' extracted successfully.", MessageType.Success);
 
-                                // Refresh browser to show extracted files
-                                await RefreshBrowserAsync();
+                                // Refresh folder list in case new folders were created during extraction
+                                _folders = await FolderService.GetFoldersAsync(ModuleState.SiteId);
+                                _folderLookup = _folders.ToDictionary(f => f.FolderId);
+
+                                // Refresh current folder to show extracted files while staying in current folder
+                                await RefreshCurrentFolderAsync();
                             }
                             else
                             {
@@ -513,8 +517,6 @@
                                 AddModuleMessage($"Error extracting ZIP: {response.StatusCode}", MessageType.Error);
                             }
                         }
-
-                        _folders = await FolderService.GetFoldersAsync(ModuleState.SiteId); // Refresh folder list in case new folders were created during extraction
                     }
                     catch (Exception ex)
                     {
