@@ -67,7 +67,15 @@ else
         @if (CanNavigateUp)
         {
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <span class="text-muted small"><b>Current Folder:</b> @_currentFolderPath</span>
+                <div>
+                    <span class="text-muted small"><b>Current Folder:</b> @_currentFolderPath</span>
+                    @if (_browserItems != null && _browserItems.Any())
+                    {
+                        <span class="ms-2 text-muted small">
+                            <b>Items:</b> @_browserItems.Count
+                        </span>
+                    }
+                </div>
                 <button class="btn btn-sm btn-outline-secondary" @onclick="OpenParentFolder">
                     <span class="oi oi-arrow-thick-left me-1"></span>Up One Level
                 </button>
