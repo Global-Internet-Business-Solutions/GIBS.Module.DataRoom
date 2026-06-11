@@ -473,6 +473,16 @@ namespace GIBS.Module.DataRoom.Controllers
 
                 _logger.Log(LogLevel.Information, this, LogFunction.Delete, "File {FileId} ({FileName}) Deleted", request.FileId, fileName);
 
+                await _activityLogService.AddActivityLogAsync(new DataRoomActivityLog
+                {
+                    DataRoomId = request.DataRoomId,
+                    FileId = request.FileId,
+                    UserId = User.UserId().ToString(),
+                    Action = "Delete",
+                    Timestamp = DateTime.UtcNow,
+                    IPAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty
+                }, request.ModuleId);
+
                 return Ok(new { success = true, message = "File deleted successfully." });
             }
             catch (Exception ex)

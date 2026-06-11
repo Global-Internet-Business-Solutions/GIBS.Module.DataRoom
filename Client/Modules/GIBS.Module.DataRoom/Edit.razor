@@ -14,15 +14,17 @@
 @inject NavigationManager NavigationManager
 @inject HttpClient HttpClient
 
+
+
 <TabStrip ActiveTab="@_activeTab">
        <TabPanel Name="Documents" Heading="Documents" ResourceKey="Documents">
 
            
             @if (_dataRoom != null && _dataRoom.FolderId > 0)
             {
-            <FileManager FolderId="@_currentFolderId"
-                         ShowFolders="true" ShowFiles="true"
-                             UploadMultiple="true"
+            <FileManager FolderId="@_currentFolderId" @key="fileManagerKey"
+                         ShowFolders="false" ShowFiles="false"
+                             UploadMultiple="true" ShowImage="false"
                              ShowSuccess="false"
                              OnUpload="HandleUploadAsync" />
                 <hr />
@@ -42,15 +44,20 @@
                 <hr />
 
                 <!-- Navigation Section - Always visible -->
-                @if (_currentFolderId != _rootFolderId)
-                {
+                
                     <div class="d-flex justify-content-between align-items-center mb-3">
-                        <span class="text-muted small"><b>Current Folder:</b> @_currentFolderPath</span>
-                        <button class="btn btn-sm btn-outline-secondary" @onclick="OpenParentFolder">
-                            <span class="oi oi-arrow-thick-left me-1"></span>Up One Level
-                        </button>
+                        <div>
+                            <span class="text-muted small"><b>Current Folder:</b> @_currentFolderPath</span>
+                           
+                        </div>
+                    @if (_currentFolderId != _rootFolderId)
+                    {
+                            <button class="btn btn-sm btn-outline-secondary" @onclick="OpenParentFolder">
+                                <span class="oi oi-arrow-thick-left me-1"></span>Up One Level
+                            </button>
+                    }
                     </div>
-                }
+            
 
                 @if (_browserItems != null && _browserItems.Any())
                 {
@@ -263,8 +270,12 @@
         }
     </TabPanel>
 
-    
+
 </TabStrip>
+
+<div class="d-flex justify-content-center mt-4">
+    <button class="btn btn-primary" @onclick="ReturnToIndex">Return</button>
+</div>
 
 @if (_showRenameFileDialog)
 {
@@ -345,6 +356,14 @@
     private string _sortColumn = "ModifiedOn";
     private bool _sortDescending = true;
     //private string _currentFolder;
+
+    private Guid fileManagerKey = Guid.NewGuid();
+
+
+    private void ReturnToIndex()
+    {
+        NavigationManager.NavigateTo(NavigateUrl());
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -529,6 +548,7 @@
                 }
             }
 
+            fileManagerKey = Guid.NewGuid();
             // Refresh log tab and browser
             _activityLogs = await ActivityLogService.GetActivityLogsAsync(_dataRoom.DataRoomId, ModuleState.ModuleId);
             await LoadUserDisplayNamesAsync();
@@ -718,8 +738,8 @@
                     _renameFileId = 0;
                     _renameIsFolder = false;
 
-                    // Refresh the browser to show the renamed item
-                    await RefreshBrowserAsync();
+                    // Refresh current folder so user stays in the same location
+                    await RefreshCurrentFolderAsync();
                     AddModuleMessage($"Item renamed to: {newName}", MessageType.Success);
                 }
                 else
@@ -760,9 +780,16 @@
             currentFolder.ParentId.HasValue)
         {
             var parentId = currentFolder.ParentId.Value;
-            _currentFolderId = parentId;
-            BuildBrowserItems();
+
+            // Verify parent exists in the lookup and is allowed
+            if (_folderLookup.TryGetValue(parentId, out var parentFolder) &&
+                _allowedFolderIds.Contains(parentId))
+            {
+                _currentFolderId = parentId;
+                BuildBrowserItems();
+            }
         }
+        
     }
 
     private bool CanNavigateUp =>
@@ -806,15 +833,33 @@
         items.AddRange(currentFolderFiles);
 
         _browserItems = items;
+        _currentFolderPath = GetCurrentFolderPath(_currentFolderId);
+    }
 
-        if (_folderLookup.TryGetValue(_currentFolderId, out var folder))
+    private string GetCurrentFolderPath(int folderId)
+    {
+        if (!_folderLookup.ContainsKey(folderId))
         {
-            _currentFolderPath = folder.Path;
+            return "Unknown";
         }
-        else
+
+        var segments = new Stack<string>();
+        var visited = new HashSet<int>();
+        var currentId = folderId;
+
+        while (_folderLookup.TryGetValue(currentId, out var folder) && visited.Add(currentId))
         {
-            _currentFolderPath = "Unknown";
+            segments.Push(folder.Name);
+
+            if (!folder.ParentId.HasValue)
+            {
+                break;
+            }
+
+            currentId = folder.ParentId.Value;
         }
+
+        return string.Join("/", segments);
     }
 
     private List<FolderBrowserItem> ApplySorting(List<FolderBrowserItem> items)
@@ -869,6 +914,17 @@
         }
 
         return $"{len:0.##} {sizes[order]}";
+    }
+
+    private int GetFileCount()
+    {
+        return _browserItems?.Count ?? 0;
+    }
+
+    private int GetFileCount(int folderId)
+    {
+        if (_files == null) return 0;
+        return _files.Count(f => f.FolderId == folderId);
     }
 
     private string GetFileTypeIcon(string extension)
@@ -956,7 +1012,11 @@
 
         try
         {
-            // Only reload files, preserving folder structure and current location
+            // Reload folder hierarchy to ensure parent relationships are current (especially after ZIP extraction)
+            _folders = await FolderService.GetFoldersAsync(ModuleState.SiteId);
+            _folderLookup = _folders.ToDictionary(f => f.FolderId);
+
+            // Only reload files, preserving current location
             _files = await GetFilesFromFolderHierarchyAsync(_rootFolderId, _folders);
             BuildBrowserItems();
         }
@@ -988,6 +1048,7 @@
 
                 // Refresh the current folder to show the deleted item is gone, while staying in the same folder
                 await RefreshCurrentFolderAsync();
+                _activityLogs = await ActivityLogService.GetActivityLogsAsync(_dataRoom.DataRoomId, ModuleState.ModuleId);
                 AddModuleMessage($"File deleted successfully.", MessageType.Success);
             }
             else

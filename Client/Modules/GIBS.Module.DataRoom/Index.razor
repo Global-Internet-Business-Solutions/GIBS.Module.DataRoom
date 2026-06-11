@@ -135,6 +135,7 @@ else
                         <td></td>
                         <td class="text-end">
                             <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenFolder(item.FolderId)">Open</button>
+                            <span class="badge bg-light text-dark border">@GetFileCount(item.FolderId) files</span>
                         </td>
                     }
                     else
@@ -457,15 +458,33 @@ else
         items.AddRange(currentFolderFiles);
 
         _browserItems = items;
+        _currentFolderPath = GetCurrentFolderPath(_currentFolderId);
+    }
 
-        if (_folderLookup.TryGetValue(_currentFolderId, out var folder))
+    private string GetCurrentFolderPath(int folderId)
+    {
+        if (!_folderLookup.ContainsKey(folderId))
         {
-            _currentFolderPath = folder.Path;
+            return "Unknown";
         }
-        else
+
+        var segments = new Stack<string>();
+        var visited = new HashSet<int>();
+        var currentId = folderId;
+
+        while (_folderLookup.TryGetValue(currentId, out var folder) && visited.Add(currentId))
         {
-            _currentFolderPath = "Unknown";
+            segments.Push(folder.Name);
+
+            if (!folder.ParentId.HasValue)
+            {
+                break;
+            }
+
+            currentId = folder.ParentId.Value;
         }
+
+        return string.Join("/", segments);
     }
 
     private List<FolderBrowserItem> ApplySorting(List<FolderBrowserItem> items)
@@ -557,6 +576,12 @@ else
     private int GetFileCount()
     {
         return _browserItems?.Count ?? 0;
+    }
+
+    private int GetFileCount(int folderId)
+    {
+        if (_files == null) return 0;
+        return _files.Count(f => f.FolderId == folderId);
     }
 
     private async Task DownloadZipAsync()

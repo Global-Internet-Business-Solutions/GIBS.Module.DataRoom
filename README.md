@@ -165,6 +165,7 @@ GIBS (Global Internet Business Solutions)
 
 - **1.2.2**: Hierarchical folder browsing, sortable columns, ZIP upload/extraction, configurable pagination
 - **1.2.2**: ZIP export with folder structure preservation  
+- **1.2.2**: Allow renaming of both files and folders with extension protection for files
 - **1.2.0**: Activity logging for all file actions
 - **1.0.0**: Initial release with basic file view/download and access logging
 
