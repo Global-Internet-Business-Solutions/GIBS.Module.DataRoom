@@ -2,14 +2,16 @@
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <Version>1.2.2</Version>
+    <Version>1.2.3</Version>
     <Authors>GIBS</Authors>
     <Company>GIBS</Company>
     <Description>Secured Data Room Module for Oqtane</Description>
     <Product>GIBS.Module.DataRoom</Product>
     <Copyright>GIBS</Copyright>
     <AssemblyName>GIBS.Module.DataRoom.Client.Oqtane</AssemblyName>
+    <RootNamespace>GIBS.Module.DataRoom</RootNamespace>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,6 +27,15 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Shared\GIBS.Module.DataRoom.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\GIBS.Module.DataRoom\Index.resx">
+      <LogicalName>GIBS.Module.DataRoom.Resources.GIBS.Module.DataRoom.Index.resources</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\GIBS.Module.DataRoom\Index.it-IT.resx">
+      <LogicalName>GIBS.Module.DataRoom.Resources.GIBS.Module.DataRoom.Index.it-IT.resources</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>

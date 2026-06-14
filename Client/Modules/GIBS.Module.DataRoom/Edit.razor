@@ -7,12 +7,14 @@
 @inherits ModuleBase
 @inject IDataRoomService DataRoomService
 @inject IDataRoomActivityLogService ActivityLogService
+@inject IDataRoomSubscriptionService SubscriptionService
 @inject IFolderService FolderService
 @inject IFileService FileService
 @inject IUserService UserService
 @inject ISettingService SettingService
 @inject NavigationManager NavigationManager
 @inject HttpClient HttpClient
+@inject IStringLocalizer<Index> Localizer
 
 
 
@@ -33,7 +35,7 @@
                     <div class="form-check form-switch">
                         <input type="checkbox" class="form-check-input" id="enableZipExtraction" @bind="_enableZipExtraction"  />
                         <label class="form-check-label" for="enableZipExtraction" style="cursor: pointer;">
-                        &nbsp; Enable Zip Extraction
+                        &nbsp; @Localizer["EnableZipExtraction"]
                         </label>
                     </div>
                     <button class="btn btn-outline-secondary btn-sm" @onclick="DownloadZipAsync">
@@ -145,6 +147,40 @@
             }
         </TabPanel>
 
+        <TabPanel Name="Subscriptions" Heading="Subscriptions" ResourceKey="Subscriptions">
+            @if (_dataRoom == null)
+            {
+                <div class="text-center text-muted py-3">Save the room first to manage subscriptions.</div>
+            }
+            else if (_subscriptions != null && _subscriptions.Any())
+            {
+                <Pager Items="@_subscriptions" SearchProperties="Email">
+                    <Header>
+                        <th>Email</th>
+                        <th>User ID</th>
+                        <th>Confirmed</th>
+                        <th>Notify Upload</th>
+                        <th>Notify Overwrite</th>
+                        <th>Active</th>
+                        <th>Last Notified</th>
+                    </Header>
+                    <Row>
+                        <td>@(string.IsNullOrWhiteSpace(context.Email) ? "-" : context.Email)</td>
+                        <td>@(context.UserId.HasValue ? context.UserId.Value.ToString() : "-")</td>
+                        <td>@(context.EmailConfirmed ? "Yes" : "No")</td>
+                        <td>@(context.NotifyOnUpload ? "Yes" : "No")</td>
+                        <td>@(context.NotifyOnOverwrite ? "Yes" : "No")</td>
+                        <td>@(context.IsActive ? "Yes" : "No")</td>
+                        <td>@(context.LastNotifiedOn.HasValue ? UtcToLocal(context.LastNotifiedOn.Value)?.ToString("g") : "-")</td>
+                    </Row>
+                </Pager>
+            }
+            else
+            {
+                <div class="text-center text-muted py-3">No subscriptions found.</div>
+            }
+        </TabPanel>
+
         <TabPanel Name="ActivityLog" Heading="Activity Log" ResourceKey="ActivityLog">
             @if (_activityLogs != null && _activityLogs.Any())
             {
@@ -224,6 +260,22 @@
                     <div class="col-sm-9">
                         <input id="emails" class="form-control" @bind="_notificationEmails"
                                placeholder="alice@example.com, bob@example.com" />
+                    </div>
+                </div>
+                <div class="row mb-3 align-items-center">
+                    <Label Class="col-sm-3" For="enableSubscription" HelpText="Allow users to subscribe to Data Room updates" ResourceKey="EnableSubscription">Enable Subscription:</Label>
+                    <div class="col-sm-9">
+                        <div class="form-check form-switch">
+                            <input id="enableSubscription" class="form-check-input" type="checkbox" @bind="_enableSubscription" />
+                        </div>
+                    </div>
+                </div>
+                <div class="row mb-3 align-items-center">
+                    <Label Class="col-sm-3" For="notifySubscriptionOnNewFile" HelpText="Notify subscribers when a new file is uploaded" ResourceKey="NotifySubscriptionOnNewFile">Notify Subscription On New File:</Label>
+                    <div class="col-sm-9">
+                        <div class="form-check form-switch">
+                            <input id="notifySubscriptionOnNewFile" class="form-check-input" type="checkbox" @bind="_notifySubscriptionOnNewFile" />
+                        </div>
                     </div>
                 </div>
                 <div class="row mb-3 align-items-center">
@@ -320,6 +372,7 @@
 
     private DataRoom _dataRoom;
     private List<Folder> _folders;
+    private List<Subscription> _subscriptions;
     private List<DataRoomActivityLog> _activityLogs;
     private Dictionary<int, string> _fileNames = new();
     private Dictionary<string, string> _userDisplayNames = new(StringComparer.OrdinalIgnoreCase);
@@ -329,6 +382,8 @@
     private int _folderId;
     private bool _isActive = true;
     private string _notificationEmails = string.Empty;
+    private bool _enableSubscription = false;
+    private bool _notifySubscriptionOnNewFile = false;
     private bool _enableDownload = true;
     private bool _enableViewOnly = true;
     private bool _enableWatermark = false;
@@ -390,9 +445,12 @@
                 _folderId = _dataRoom.FolderId;
                 _isActive = _dataRoom.IsActive;
                 _notificationEmails = _dataRoom.NotificationEmails ?? string.Empty;
+                _enableSubscription = _dataRoom.EnableSubscription;
+                _notifySubscriptionOnNewFile = _dataRoom.NotifySubscriptionOnNewFile;
                 _enableDownload = _dataRoom.EnableDownload;
                 _enableViewOnly = _dataRoom.EnableViewOnly;
                 _enableWatermark = _dataRoom.EnableWatermark;
+                _subscriptions = await SubscriptionService.GetSubscriptionsAsync(_dataRoom.DataRoomId, ModuleState.ModuleId);
                 _activityLogs = await ActivityLogService.GetActivityLogsAsync(_dataRoom.DataRoomId, ModuleState.ModuleId);
                 await LoadFileNamesAsync();
                 await LoadUserDisplayNamesAsync();
@@ -446,6 +504,8 @@
                     FolderId = _folderId,
                     IsActive = _isActive,
                     NotificationEmails = _notificationEmails,
+                    EnableSubscription = _enableSubscription,
+                    NotifySubscriptionOnNewFile = _notifySubscriptionOnNewFile,
                     EnableDownload = _enableDownload,
                     EnableViewOnly = _enableViewOnly,
                     EnableWatermark = _enableWatermark
@@ -460,6 +520,8 @@
                 _dataRoom.FolderId = _folderId;
                 _dataRoom.IsActive = _isActive;
                 _dataRoom.NotificationEmails = _notificationEmails;
+                _dataRoom.EnableSubscription = _enableSubscription;
+                _dataRoom.NotifySubscriptionOnNewFile = _notifySubscriptionOnNewFile;
                 _dataRoom.EnableDownload = _enableDownload;
                 _dataRoom.EnableViewOnly = _enableViewOnly;
                 _dataRoom.EnableWatermark = _enableWatermark;

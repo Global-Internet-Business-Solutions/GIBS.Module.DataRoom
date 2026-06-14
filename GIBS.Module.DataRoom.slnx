@@ -1,15 +1,15 @@
 <Solution>
   <Folder Name="/_Oqtane/">
-    <Project Path="../oqtane.framework/Oqtane.Client/Oqtane.Client.csproj" />
-    <Project Path="../oqtane.framework/Oqtane.Shared/Oqtane.Shared.csproj" />
+    <Project Path="../oqtane.framework/Oqtane.Client/Oqtane.Client.csproj">
+      <Build Solution="Release|*" Project="false" />
+    </Project>
+    <Project Path="../oqtane.framework/Oqtane.Shared/Oqtane.Shared.csproj">
+      <Build Solution="Release|*" Project="false" />
+    </Project>
     <Project Path="..\oqtane.framework\Oqtane.Server\Oqtane.Server.csproj">
-      <Build Solution="Debug|*" Project="false" />
+      <Build Project="false" />
     </Project>
   </Folder>
-  <Project Path="Client\GIBS.Module.DataRoom.Client.csproj" />
-  <Project Path="Package\GIBS.Module.DataRoom.Package.csproj" />
-  <Project Path="Server\GIBS.Module.DataRoom.Server.csproj" />
-  <Project Path="Shared\GIBS.Module.DataRoom.Shared.csproj" />
   <Folder Name="/docs/governance/">
     <File Path="../oqtane-ai-playbook/module-playbook-example/docs/governance/027-rules-index.md" />
     <File Path="../oqtane-ai-playbook/module-playbook-example/docs/governance/027x-ai-decision-timeline.md" />
@@ -36,4 +36,8 @@
     <File Path="docs/deviations.md" />
     <File Path="docs/ai-decision-timeline.md" />
   </Folder>
+  <Project Path="Client\GIBS.Module.DataRoom.Client.csproj" />
+  <Project Path="Package\GIBS.Module.DataRoom.Package.csproj" />
+  <Project Path="Server\GIBS.Module.DataRoom.Server.csproj" />
+  <Project Path="Shared\GIBS.Module.DataRoom.Shared.csproj" />
 </Solution>

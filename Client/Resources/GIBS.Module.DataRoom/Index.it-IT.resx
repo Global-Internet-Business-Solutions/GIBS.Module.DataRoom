@@ -118,19 +118,19 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="Add.Text" xml:space="preserve">
-    <value>Add DataRoom</value>
+    <value>Aggiungere DataRoom</value>
   </data>
   <data name="Edit.Text" xml:space="preserve">
-    <value>Edit</value>
+    <value>Modificare</value>
   </data>
   <data name="Delete.Text" xml:space="preserve">
-    <value>Delete</value>
+    <value>Eliminare</value>
   </data>
   <data name="Delete.Header" xml:space="preserve">
-    <value>Delete DataRoom</value>
+    <value>Elimina DataRoom</value>
   </data>
   <data name="Delete.Message" xml:space="preserve">
-    <value>Are You Sure You Wish To Delete This DataRoom?</value>
+    <value>Sei sicuro di voler eliminare questa DataRoom?</value>
   </data>
   <data name="Message.DisplayNone" xml:space="preserve">
     <value>No DataRooms To Display</value>
@@ -142,84 +142,84 @@
     <value>Error Deleting DataRoom</value>
   </data>
   <data name="EnableZipExtraction" xml:space="preserve">
-    <value>Enable Zip Extraction</value>
+    <value>Abilita l'estrazione di file ZIP</value>
   </data>
   <data name="Files" xml:space="preserve">
-    <value>files</value>
+    <value>file</value>
   </data>
   <data name="DownloadAllZip" xml:space="preserve">
-    <value>Download All (Zip)</value>
+    <value>Scarica tutto (Zip)</value>
   </data>
   <data name="Name" xml:space="preserve">
-    <value>Name</value>
+    <value>Nome</value>
   </data>
   <data name="NoAccessMessage" xml:space="preserve">
-    <value>You may not have permissions to access this data room. Please contact the site administrator.</value>
+    <value>Potresti non disporre delle autorizzazioni per accedere a questa data room. Si prega di contattare l'amministratore del sito.</value>
   </data>
   <data name="NotAuthorizedMessage" xml:space="preserve">
-    <value>You are not authorized to view this Data Room. Are you logged in?</value>
+    <value>Potresti non essere autorizzato a visualizzare questa Data Room. Hai effettuato l'accesso?</value>
   </data>
   <data name="Modified" xml:space="preserve">
-    <value>Modified</value>
+    <value>Modificato</value>
   </data>
   <data name="Open" xml:space="preserve">
-    <value>Open</value>
+    <value>Apri</value>
   </data>
   <data name="Manage" xml:space="preserve">
-    <value>Manage</value>
+    <value>Gestisci</value>
   </data>
   <data name="Type" xml:space="preserve">
-    <value>Type</value>
+    <value>Tipo</value>
   </data>
   <data name="Size" xml:space="preserve">
-    <value>Size</value>
+    <value>Dimensione</value>
   </data>
   <data name="InactiveMessage" xml:space="preserve">
-    <value>This Data Room is currently inactive.</value>
+    <value>Questa Data Room è attualmente inattiva.</value>
   </data>
   <data name="CurrentFolder" xml:space="preserve">
-    <value>Current Folder:</value>
+    <value>Cartella Attuale:</value>
   </data>
   <data name="Items" xml:space="preserve">
-    <value>Items:</value>
+    <value>Elementi:</value>
   </data>
   <data name="UpOneLevel" xml:space="preserve">
-    <value>Up One Level</value>
+    <value>Su Un Livello</value>
   </data>
   <data name="Action" xml:space="preserve">
-    <value>Action</value>
+    <value>Azione</value>
   </data>
   <data name="Download" xml:space="preserve">
-    <value>Download</value>
+    <value>Scarica</value>
   </data>
   <data name="View" xml:space="preserve">
-    <value>View</value>
+    <value>Visualizza</value>
   </data>
   <data name="AccessRestricted" xml:space="preserve">
-    <value>Access Restricted</value>
+    <value>Accesso Limitato</value>
   </data>
   <data name="NoDocumentsAvailable" xml:space="preserve">
-    <value>No documents available in this folder.</value>
+    <value>Nessun documento disponibile in questa cartella.</value>
   </data>
   <data name="EmailForNotifications" xml:space="preserve">
-    <value>Email for notifications</value>
+    <value>Email per le notifiche</value>
   </data>
   <data name="Folder" xml:space="preserve">
-    <value>Folder</value>
+    <value>Cartella</value>
   </data>
   <data name="Subscribe" xml:space="preserve">
-    <value>Subscribe</value>
+    <value>Iscriviti</value>
   </data>
   <data name="Subscribed" xml:space="preserve">
-    <value>Subscribed</value>
+    <value>Iscritto</value>
   </data>
   <data name="Configure" xml:space="preserve">
-    <value>Configure</value>
+    <value>Configura</value>
   </data>
   <data name="UnsubscribeFromNotifications" xml:space="preserve">
-    <value>Unsubscribe from notifications</value>
+    <value>Annulla l'iscrizione dalle notifiche</value>
   </data>
   <data name="SubscribeToNotifications" xml:space="preserve">
-    <value>Subscribe to notifications</value>
+    <value>Iscriviti alle notifiche</value>
   </data>
 </root>

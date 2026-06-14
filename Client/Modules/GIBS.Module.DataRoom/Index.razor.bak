@@ -23,14 +23,7 @@
         <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
     </div>
 }
-else if (!_cultureLoaded)
-{
-    <!-- Waiting for culture to load in OnAfterRenderAsync -->
-    <div class="text-center py-3">
-        <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
-    </div>
-}
-else if (true && !string.IsNullOrEmpty(_debugPageStateUserCulture) && _showDebug)
+else if (false && !string.IsNullOrEmpty(_debugPageStateUserCulture) && _showDebug)
 {
     <!-- DEBUG INFO -->
     <div class="alert alert-warning alert-dismissible fade show" role="alert">
@@ -65,27 +58,6 @@ else if (!_isViewRoleAuthorized)
 }
 else
 {
-    <!-- CustomLanguageSelector -->
-    <div class="text-end mb-3">
-        <div class="btn-group" role="group" style="box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 6px; overflow: hidden;">
-            <button type="button" 
-                    class="btn @(_currentLanguage == "en" ? "btn-primary" : "btn-light")"
-                    @onclick='async () => await SetLanguageAsync("en")'
-                    title="English"
-                    style="padding: 8px 16px; border: none; font-weight: 500; transition: all 0.2s ease;">
-                <span class="badge bg-secondary rounded-pill me-2">EN</span>
-                English
-            </button>
-            <button type="button" 
-                    class="btn @(_currentLanguage == "it" ? "btn-primary" : "btn-light")"
-                    @onclick='async () => await SetLanguageAsync("it")'
-                    title="Italiano"
-                    style="padding: 8px 16px; border: none; font-weight: 500; transition: all 0.2s ease;">
-                <span class="badge bg-secondary rounded-pill me-2">IT</span>
-                Italiano
-            </button>
-        </div>
-    </div>
     <div class="dataroom">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
@@ -103,7 +75,10 @@ else
                         <span class="oi oi-data-transfer-download me-1"></span>@GetLocalizedString("DownloadAllZip")
                     </button>
                 }
-
+                @if (IsAuthorizedPermission(PermissionNames.Edit))
+                {
+                    <ActionLink Action="Edit" Parameters="@($"id={_dataRoom.DataRoomId}")" Class="btn btn-sm btn-outline-secondary" Text="@GetLocalizedString("Manage")" />
+                }
                 @if (_dataRoom.EnableSubscription && PageState?.User != null)
                 {
                     @if (_userSubscription != null && _userSubscription.SubscriptionId > 0)
@@ -118,13 +93,6 @@ else
                             <span class="oi oi-bell me-1"></span>@GetLocalizedString("Subscribe")
                         </button>
                     }
-                }
-
-
-
-                @if (IsAuthorizedPermission(PermissionNames.Edit))
-                {
-                    <ActionLink Action="Edit" Parameters="@($"id={_dataRoom.DataRoomId}")" Class="btn btn-sm btn-outline-secondary" Text="@GetLocalizedString("Manage")" />
                 }
             </div>
         </div>
@@ -165,14 +133,14 @@ else
                         }
                     </th>
                     <th style="cursor: pointer;" @onclick='@(() => OnSortColumnChanged("Type"))'>
-                        @GetLocalizedString("Type")
+                        Type
                         @if (_sortColumn == "Type")
                         {
                             <span class="oi oi-sort-@(_sortDescending ? "descending" : "ascending")" style="margin-left: 5px;"></span>
                         }
                     </th>
                     <th style="cursor: pointer;" @onclick='@(() => OnSortColumnChanged("Size"))'>
-                        @GetLocalizedString("Size")
+                        Size
                         @if (_sortColumn == "Size")
                         {
                             <span class="oi oi-sort-@(_sortDescending ? "descending" : "ascending")" style="margin-left: 5px;"></span>
@@ -185,7 +153,7 @@ else
                             <span class="oi oi-sort-@(_sortDescending ? "descending" : "ascending")" style="margin-left: 5px;"></span>
                         }
                     </th>
-                    <th class="text-end">@GetLocalizedString("Action") </th>          
+                    <th class="text-end">Action</th>          
                 </Header>
 
                 <Row Context="item">
@@ -201,7 +169,7 @@ else
                         <td></td>
                         <td class="text-end">
                             <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenFolder(item.FolderId)">@GetLocalizedString("Open")</button>
-                            <span class="badge bg-light text-dark border">@GetFileCount(item.FolderId) @GetLocalizedString("Files")</span>
+                            <span class="badge bg-light text-dark border">@GetFileCount(item.FolderId) files</span>
                         </td>
                     }
                     else
@@ -231,7 +199,7 @@ else
                             {
                                 @if (_dataRoom.EnableViewOnly)
                                 {
-                                    <ActionLink Action="View" Parameters="@($"fileid={item.FileId}&dataroomid={_dataRoom.DataRoomId}")" IconName="eye" Text="@GetLocalizedString("View")" Class="btn btn-sm btn-info text-white me-1">
+                                    <ActionLink Action="View" Parameters="@($"fileid={item.FileId}&dataroomid={_dataRoom.DataRoomId}")" IconName="eye" Text="View" Class="btn btn-sm btn-info text-white me-1">
                                     </ActionLink>
                                 }
                                 @if (_dataRoom.EnableDownload)
@@ -276,7 +244,6 @@ else
     };
 
     private bool _initialized;
-    private bool _cultureLoaded; // Flag to trigger re-render after culture is loaded
     private DataRoom _dataRoom;
     private List<Oqtane.Models.File> _files;
     private List<Folder> _folders = new();
@@ -292,8 +259,6 @@ else
     private bool _isSubscribed;
     private bool _subscriptionBusy;
     private string _anonymousSubscriptionEmail = string.Empty;
-    private string _currentLanguage = "";
-    private CultureInfo _currentUICulture = CultureInfo.InvariantCulture;
 
     // DEBUG
     private string _debugPageStateUserCulture = "";
@@ -301,7 +266,7 @@ else
     private string _debugFinalCulture = "";
     private string _debugLocalizerTest = "";
     private string _debugCookieCulture = "";
-    private bool _showDebug = false;
+    private bool _showDebug = true;
     private bool _isViewRoleAuthorized = true;
     private string _sortColumn = "ModifiedOn";
     private bool _sortDescending = true;
@@ -310,14 +275,9 @@ else
     {
         try
         {
-            var settings = await SettingService.GetModuleSettingsAsync(ModuleState.ModuleId);
-            _ViewRole = SettingService.GetSetting(settings, "ViewRole", "");
-            _currentLanguage = SettingService.GetSetting(settings, "DefaultLanguage", "it");
-
-
             // Note: Cannot call JS interop during OnInitializedAsync - component not fully interactive yet
             // Instead, use PageState.User.CultureCode which is set server-side by Oqtane
-            var uiCultureCode = _currentLanguage;          //PageState?.User?.CultureCode;
+            var uiCultureCode = PageState?.User?.CultureCode;
             _debugCookieCulture = $"(JS interop skipped during OnInitializedAsync)";
 
             // DEBUG: Log what we're getting
@@ -368,7 +328,8 @@ else
                 }
             }
 
-
+            var settings = await SettingService.GetModuleSettingsAsync(ModuleState.ModuleId);
+            _ViewRole = SettingService.GetSetting(settings, "ViewRole", "");
 
             var numberPerPageSetting = SettingService.GetSetting(settings, "NumberPerPage", "10");
             if (!int.TryParse(numberPerPageSetting, out _numberPerPage) || _numberPerPage < 1)
@@ -514,7 +475,6 @@ else
                         var uiCulture = CultureInfo.GetCultureInfo(fullCultureCode);
                         CultureInfo.CurrentCulture = uiCulture;
                         CultureInfo.CurrentUICulture = uiCulture;
-                        _currentUICulture = uiCulture;  // Store in field for GetLocalizedString to use
                         _debugFinalCulture = $"Culture set to {fullCultureCode} (from cookie)";
                         // Test both the injected Localizer and our helper method
                         var injectedValue = Localizer["NoAccessMessage"];
@@ -527,13 +487,11 @@ else
                     }
                 }
 
-                _cultureLoaded = true; // Signal that culture is ready, trigger re-render
                 StateHasChanged(); // Refresh UI with updated debug info
             }
             catch (Exception ex)
             {
                 _debugCookieCulture = $"Error reading cookie: {ex.Message}";
-                _cultureLoaded = true; // Even if error, mark as loaded so page shows
                 StateHasChanged();
             }
         }
@@ -855,33 +813,6 @@ else
         };
     }
 
-    private async Task SetLanguageAsync(string languageCode)
-    {
-        try
-        {
-            _currentLanguage = languageCode;
-
-            // Build the cookie value: "c=it|uic=en" format
-            string cookieValue = $"c={languageCode}|uic=en";
-
-            // Update current UI culture field (used by GetLocalizedString)
-            var cultureInfo = new System.Globalization.CultureInfo(
-                languageCode == "it" ? "it-IT" : "en-US");
-            System.Globalization.CultureInfo.CurrentUICulture = cultureInfo;
-            _currentUICulture = cultureInfo; // Update our field so GetLocalizedString uses it
-
-            // Trigger re-render immediately with new language
-            StateHasChanged();
-
-            // Set the cookie in background (fire and forget) for persistence on future loads
-            _ = JSRuntime.InvokeVoidAsync("GIBS.DataRoom.setCultureCookie", cookieValue);
-        }
-        catch (Exception ex)
-        {
-            // Silent fail - language switch happened, cookie setting failed is not critical
-        }
-    }
-
     private async Task SubscribeAsync()
     {
         try
@@ -952,20 +883,30 @@ else
     /// </summary>
     private string GetLocalizedString(string key)
     {
-        try
+        // Try to get the string from the localizer first (which is bound to the initial culture)
+        var value = Localizer[key];
+
+        // If the localizer returned the key (not found), or if we should prefer the current UI culture,
+        // try to load directly using the current culture
+        if (value.ResourceNotFound || string.IsNullOrEmpty(value))
         {
-            // Use ResourceManager to load strings based on the current stored culture
-            var assembly = typeof(GIBS.Module.DataRoom.Index).Assembly;
-            var baseName = "GIBS.Module.DataRoom.Resources.GIBS.Module.DataRoom.Index";
+            // Use ResourceManager to load strings based on current culture
+            var resourceType = typeof(GIBS.Module.DataRoom.Index);
+            var assembly = resourceType.Assembly;
+            var baseName = typeof(GIBS.Module.DataRoom.Index).Namespace + ".Resources.GIBS.Module.DataRoom.Index";
             var rm = new System.Resources.ResourceManager(baseName, assembly);
-            var localized = rm.GetString(key, _currentUICulture);
-            return localized ?? key;
+
+            try
+            {
+                var localized = rm.GetString(key, CultureInfo.CurrentUICulture);
+                return localized ?? value;
+            }
+            catch
+            {
+                return value;
+            }
         }
-        catch (Exception ex)
-        {
-            // If ResourceManager fails, fallback to the localizer
-            var value = Localizer[key];
-            return value.ResourceNotFound ? key : value;
-        }
+
+        return value;
     }
 }

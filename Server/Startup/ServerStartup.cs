@@ -23,6 +23,7 @@ namespace GIBS.Module.DataRoom.Startup
         {
             services.AddTransient<IDataRoomService, ServerDataRoomService>();
             services.AddTransient<IDataRoomActivityLogService, ServerDataRoomActivityLogService>();
+            services.AddTransient<IDataRoomSubscriptionService, ServerDataRoomSubscriptionService>();
             services.AddDbContextFactory<DataRoomContext>(opt => { }, ServiceLifetime.Transient);
         }
     }

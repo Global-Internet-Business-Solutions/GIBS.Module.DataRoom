@@ -3,6 +3,29 @@ var GIBS = GIBS || {};
 
 GIBS.DataRoom = GIBS.DataRoom || {};
 
+GIBS.DataRoom.getCultureFromCookie = function() {
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return decodeURIComponent(parts.pop().split(';').shift());
+        return null;
+    }
+    const result = getCookie('.AspNetCore.Culture') || '';
+    console.log('getCultureFromCookie result:', result);
+    return result;
+};
+
+GIBS.DataRoom.setCultureCookie = function(cultureValue) {
+    // Set the .AspNetCore.Culture cookie with the specified value
+    // The value format should be "c=it|uic=en"
+    const expires = new Date();
+    expires.setTime(expires.getTime() + (365 * 24 * 60 * 60 * 1000)); // 1 year
+    const expiresString = expires.toUTCString();
+
+    document.cookie = `.AspNetCore.Culture=${cultureValue}; expires=${expiresString}; path=/`;
+    console.log('setCultureCookie: set to', cultureValue);
+};
+
 GIBS.DataRoom.loadPdfIntoFrame = async function (frameId, url, fallbackUrl) {
     try {
         const frame = document.getElementById(frameId);

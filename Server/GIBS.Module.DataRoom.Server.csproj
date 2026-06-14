@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <AddRazorSupportForMvc>true</AddRazorSupportForMvc>
-    <Version>1.2.2</Version>
+    <Version>1.2.3</Version>
     <Product>GIBS.Module.DataRoom</Product>
     <Authors>GIBS</Authors>
     <Company>GIBS</Company>

@@ -11,6 +11,7 @@ namespace GIBS.Module.DataRoom.Repository
     {
         public virtual DbSet<Models.DataRoom> DataRoom { get; set; }
         public virtual DbSet<Models.DataRoomActivityLog> DataRoomActivityLog { get; set; }
+        public virtual DbSet<Models.Subscription> DataRoomSubscription { get; set; }
 
         public DataRoomContext(IDBContextDependencies DBContextDependencies) : base(DBContextDependencies)
         {
@@ -23,6 +24,7 @@ namespace GIBS.Module.DataRoom.Repository
 
             builder.Entity<Models.DataRoom>().ToTable(ActiveDatabase.RewriteName("GIBSDataRoom"));
             builder.Entity<Models.DataRoomActivityLog>().ToTable(ActiveDatabase.RewriteName("GIBSDataRoomActivityLog"));
+            builder.Entity<Models.Subscription>().ToTable(ActiveDatabase.RewriteName("GIBSDataRoomSubscription"));
         }
     }
 }

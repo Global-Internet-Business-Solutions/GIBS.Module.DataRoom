@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <metadata>
         <id>$projectname$</id>
-        <version>1.2.2</version>
+        <version>1.2.3</version>
         <authors>GIBS</authors>
         <owners>GIBS</owners>
         <title>DataRoom</title>
@@ -23,6 +23,7 @@
     <files>
         <file src="..\Client\bin\Release\$targetframework$\$ProjectName$.Client.Oqtane.dll" target="lib\$targetframework$" />
         <file src="..\Client\bin\Release\$targetframework$\$ProjectName$.Client.Oqtane.pdb" target="lib\$targetframework$" />
+        <file src="..\Client\bin\Release\$targetframework$\it-IT\$ProjectName$.Client.Oqtane.resources.dll" target="lib\$targetframework$\it-IT" />
         <file src="..\Server\bin\Release\$targetframework$\$ProjectName$.Server.Oqtane.dll" target="lib\$targetframework$" />
         <file src="..\Server\bin\Release\$targetframework$\$ProjectName$.Server.Oqtane.pdb" target="lib\$targetframework$" />
         <file src="..\Shared\bin\Release\$targetframework$\$ProjectName$.Shared.Oqtane.dll" target="lib\$targetframework$" />
