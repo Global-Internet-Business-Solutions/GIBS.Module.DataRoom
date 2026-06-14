@@ -312,24 +312,21 @@ else
         {
             var settings = await SettingService.GetModuleSettingsAsync(ModuleState.ModuleId);
             _ViewRole = SettingService.GetSetting(settings, "ViewRole", "");
-            _currentLanguage = SettingService.GetSetting(settings, "DefaultLanguage", "it");
+
+            // Set default language from module setting, fallback to site default language
+            _currentLanguage = SettingService.GetSetting(settings, "PageLanguage", 
+                PageState?.Site?.Languages?.FirstOrDefault(l => l.IsDefault)?.Code ?? "it");
+        //    SetLanguageAsync(_currentLanguage).ConfigureAwait(false); // Start async language setup, but don't await here since it will set culture in OnAf
 
 
             // Note: Cannot call JS interop during OnInitializedAsync - component not fully interactive yet
-            // Instead, use PageState.User.CultureCode which is set server-side by Oqtane
-            var uiCultureCode = _currentLanguage;          //PageState?.User?.CultureCode;
-            _debugCookieCulture = $"(JS interop skipped during OnInitializedAsync)";
+            // Set culture based on the page language setting
+            var uiCultureCode = _currentLanguage == "it" ? "it-IT" : "en-US";
+            _debugCookieCulture = $"(Will be overridden by cookie in OnAfterRenderAsync if present)";
 
             // DEBUG: Log what we're getting
-            _debugPageStateUserCulture = $"PageState.User.CultureCode = '{PageState?.User?.CultureCode ?? "null"}'";
+            _debugPageStateUserCulture = $"Page Language Setting = '{_currentLanguage}'";
             _debugSiteLanguages = $"Site Languages: {string.Join(", ", PageState?.Site?.Languages?.Select(l => $"{l.Code}(Default={l.IsDefault})") ?? new List<string>())}";
-
-            // If no user culture, fall back to site default language
-            if (string.IsNullOrWhiteSpace(uiCultureCode))
-            {
-                uiCultureCode = PageState?.Site?.Languages?.FirstOrDefault(l => l.IsDefault)?.Code;
-                _debugPageStateUserCulture += $" (fell back to site default: {uiCultureCode})";
-            }
 
             if (!string.IsNullOrWhiteSpace(uiCultureCode))
             {
@@ -357,6 +354,7 @@ else
                     var uiCulture = CultureInfo.GetCultureInfo(uiCultureCode);
                     CultureInfo.CurrentCulture = uiCulture;
                     CultureInfo.CurrentUICulture = uiCulture;
+                    _currentUICulture = uiCulture; // Store in field for GetLocalizedString to use
 
                     _debugFinalCulture = $"Culture set to {uiCultureCode}, CurrentCulture={CultureInfo.CurrentCulture.Name}, CurrentUICulture={CultureInfo.CurrentUICulture.Name}";
                     _debugLocalizerTest = $"Localizer['NoAccessMessage'] = '{Localizer["NoAccessMessage"]}'";
@@ -528,6 +526,7 @@ else
                 }
 
                 _cultureLoaded = true; // Signal that culture is ready, trigger re-render
+                await SetLanguageAsync(_currentLanguage); // Ensure our language selector reflects the current language
                 StateHasChanged(); // Refresh UI with updated debug info
             }
             catch (Exception ex)
