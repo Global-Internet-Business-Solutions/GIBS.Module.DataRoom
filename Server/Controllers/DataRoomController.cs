@@ -778,22 +778,42 @@ namespace GIBS.Module.DataRoom.Controllers
                         path += "/";
                     }
 
-                    existing = _folderRepository.AddFolder(new Folder
+                    try
                     {
-                        SiteId = current.SiteId,
-                        ParentId = current.FolderId,
-                        Type = current.Type,
-                        Name = segment,
-                        Path = path,
-                        Order = 1,
-                        ImageSizes = current.ImageSizes,
-                        Capacity = current.Capacity,
-                        IsSystem = false,
-                        CacheControl = current.CacheControl,
-                        PermissionList = CreateChildFolderPermissions(current)
-                    });
+                        existing = _folderRepository.AddFolder(new Folder
+                        {
+                            SiteId = current.SiteId,
+                            ParentId = current.FolderId,
+                            Type = current.Type,
+                            Name = segment,
+                            Path = path,
+                            Order = 1,
+                            ImageSizes = current.ImageSizes,
+                            Capacity = current.Capacity,
+                            IsSystem = false,
+                            CacheControl = current.CacheControl,
+                            PermissionList = CreateChildFolderPermissions(current)
+                        });
 
-                    knownFolders.Add(existing);
+                        knownFolders.Add(existing);
+                    }
+                    catch (Exception ex) when (ex.InnerException?.Message.Contains("duplicate key") == true || ex.Message.Contains("duplicate key"))
+                    {
+                        // Folder already exists in database, fetch it instead
+                        existing = _folderRepository.GetFolders(current.SiteId).FirstOrDefault(f =>
+                            f.ParentId == current.FolderId &&
+                            string.Equals(f.Name, segment, StringComparison.OrdinalIgnoreCase));
+
+                        if (existing == null)
+                        {
+                            throw;
+                        }
+
+                        if (!knownFolders.Any(f => f.FolderId == existing.FolderId))
+                        {
+                            knownFolders.Add(existing);
+                        }
+                    }
                 }
 
                 current = existing;

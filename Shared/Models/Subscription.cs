@@ -24,6 +24,8 @@ namespace GIBS.Module.DataRoom.Models
         public bool NotifyOnUpload { get; set; } = true;
         public bool NotifyOnOverwrite { get; set; } = true;
         public bool IsActive { get; set; } = true;
+        public int FolderId { get; set; }
+        public bool IncludeSubfolders { get; set; } = true;
 
         public DateTime? LastNotifiedOn { get; set; }
     }

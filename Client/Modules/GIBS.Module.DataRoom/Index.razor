@@ -17,6 +17,8 @@
 @inject IStringLocalizer<Index> Localizer
 @inject IJSRuntime JSRuntime
 
+
+
 @if (!_initialized)
 {
     <div class="text-center py-3">
@@ -30,27 +32,27 @@ else if (!_cultureLoaded)
         <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
     </div>
 }
-else if (true && !string.IsNullOrEmpty(_debugPageStateUserCulture) && _showDebug)
-{
-    <!-- DEBUG INFO -->
-    <div class="alert alert-warning alert-dismissible fade show" role="alert">
-        <strong>?? DEBUG INFO:</strong>
-        <br /><small>@_debugCookieCulture</small>
-        <br /><small>@_debugPageStateUserCulture</small>
-        <br /><small>@_debugSiteLanguages</small>
-        <br /><small>@_debugFinalCulture</small>
-        <br /><small>@_debugLocalizerTest</small>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" @onclick="() => _showDebug = false"></button>
-    </div>
-}
+// else if (true && !string.IsNullOrEmpty(_debugPageStateUserCulture) && _showDebug)
+// {
+//     <!-- DEBUG INFO -->
+//     <div class="alert alert-warning alert-dismissible fade show" role="alert">
+//         <strong>?? DEBUG INFO:</strong>
+//         <br /><small>@_debugCookieCulture</small>
+//         <br /><small>@_debugPageStateUserCulture</small>
+//         <br /><small>@_debugSiteLanguages</small>
+//         <br /><small>@_debugFinalCulture</small>
+//         <br /><small>@_debugLocalizerTest</small>
+//         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" @onclick="() => _showDebug = false"></button>
+//     </div>
+// }
 else if (_dataRoom == null)
 {
     <div class="alert alert-info">
-        <p class="mb-0">@GetLocalizedString("NoAccessMessage")</p>
+        <p class="mb-0">@Localizer["NoAccessMessage"]</p>
         @if (IsAuthorizedPermission(PermissionNames.Edit))
             {
                 <div class="mt-2">
-                    <ActionLink Action="Edit" Parameters="@($"id={_dataRoom?.DataRoomId ?? 0}")" Text="@GetLocalizedString("Configure")" Class="btn btn-sm btn-primary" />
+                <ActionLink Action="Edit" Parameters="@($"id={_dataRoom?.DataRoomId ?? 0}")" Text="@Localizer["Configure"]" Class="btn btn-sm btn-primary" />
                 </div>
         }
     </div>
@@ -65,8 +67,8 @@ else if (!_isViewRoleAuthorized)
 }
 else
 {
-    <!-- CustomLanguageSelector -->
-    <div class="text-end mb-3">
+    <!-- SAVE CustomLanguageSelector -->
+@*     <div class="text-end mb-3">
         <div class="btn-group" role="group" style="box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 6px; overflow: hidden;">
             <button type="button" 
                     class="btn @(_currentLanguage == "en" ? "btn-primary" : "btn-light")"
@@ -85,7 +87,7 @@ else
                 Italiano
             </button>
         </div>
-    </div>
+    </div> *@
     <div class="dataroom">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
@@ -109,13 +111,13 @@ else
                     @if (_userSubscription != null && _userSubscription.SubscriptionId > 0)
                     {
                         <button class="btn btn-sm btn-outline-success" @onclick="UnsubscribeAsync" disabled="@_subscriptionBusy" title="@GetLocalizedString("UnsubscribeFromNotifications")">
-                            <span class="oi oi-check me-1" style="color: green;"></span>@GetLocalizedString("Subscribed")
+                            <span class="oi oi-bell me-1" style="color: green;"></span>@GetLocalizedString("Subscribed")
                         </button>
                     }
                     else
                     {
-                        <button class="btn btn-sm btn-outline-secondary" @onclick="SubscribeAsync" disabled="@_subscriptionBusy" title="@GetLocalizedString("SubscribeToNotifications")">
-                            <span class="oi oi-bell me-1"></span>@GetLocalizedString("Subscribe")
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="SubscribeAsync" disabled="@_subscriptionBusy" title="@Localizer["SubscribeToNotifications"]">
+                            <span class="oi oi-bell me-1"></span>@Localizer["Subscribe"]
                         </button>
                     }
                 }
@@ -296,15 +298,16 @@ else
     private CultureInfo _currentUICulture = CultureInfo.InvariantCulture;
 
     // DEBUG
-    private string _debugPageStateUserCulture = "";
-    private string _debugSiteLanguages = "";
-    private string _debugFinalCulture = "";
-    private string _debugLocalizerTest = "";
-    private string _debugCookieCulture = "";
-    private bool _showDebug = false;
+    // private string _debugPageStateUserCulture = "";
+    // private string _debugSiteLanguages = "";
+    // private string _debugFinalCulture = "";
+    // private string _debugLocalizerTest = "";
+    // private string _debugCookieCulture = "";
+    // private bool _showDebug = false;
     private bool _isViewRoleAuthorized = true;
     private string _sortColumn = "ModifiedOn";
     private bool _sortDescending = true;
+    private string _defaultLanguage = "en";
 
     protected override async Task OnInitializedAsync()
     {
@@ -312,21 +315,20 @@ else
         {
             var settings = await SettingService.GetModuleSettingsAsync(ModuleState.ModuleId);
             _ViewRole = SettingService.GetSetting(settings, "ViewRole", "");
+            _defaultLanguage = SettingService.GetSetting(settings, "DefaultLanguage", "en");
 
-            // Set default language from module setting, fallback to site default language
-            _currentLanguage = SettingService.GetSetting(settings, "PageLanguage", 
-                PageState?.Site?.Languages?.FirstOrDefault(l => l.IsDefault)?.Code ?? "it");
-        //    SetLanguageAsync(_currentLanguage).ConfigureAwait(false); // Start async language setup, but don't await here since it will set culture in OnAf
 
+            // Set default language from site's default language
+            _currentLanguage = PageState?.Site?.Languages?.FirstOrDefault(l => l.IsDefault)?.Code ?? _defaultLanguage;
 
             // Note: Cannot call JS interop during OnInitializedAsync - component not fully interactive yet
-            // Set culture based on the page language setting
-            var uiCultureCode = _currentLanguage == "it" ? "it-IT" : "en-US";
-            _debugCookieCulture = $"(Will be overridden by cookie in OnAfterRenderAsync if present)";
+            // Convert 2-letter language code to full culture code
+            var uiCultureCode = _currentLanguage;
+            // _debugCookieCulture = $"(Will be overridden by cookie in OnAfterRenderAsync if present)";
 
             // DEBUG: Log what we're getting
-            _debugPageStateUserCulture = $"Page Language Setting = '{_currentLanguage}'";
-            _debugSiteLanguages = $"Site Languages: {string.Join(", ", PageState?.Site?.Languages?.Select(l => $"{l.Code}(Default={l.IsDefault})") ?? new List<string>())}";
+            // _debugPageStateUserCulture = $"Page Language Setting = '{_currentLanguage}'";
+            // _debugSiteLanguages = $"Site Languages: {string.Join(", ", PageState?.Site?.Languages?.Select(l => $"{l.Code}(Default={l.IsDefault})") ?? new List<string>())}";
 
             if (!string.IsNullOrWhiteSpace(uiCultureCode))
             {
@@ -356,13 +358,11 @@ else
                     CultureInfo.CurrentUICulture = uiCulture;
                     _currentUICulture = uiCulture; // Store in field for GetLocalizedString to use
 
-                    _debugFinalCulture = $"Culture set to {uiCultureCode}, CurrentCulture={CultureInfo.CurrentCulture.Name}, CurrentUICulture={CultureInfo.CurrentUICulture.Name}";
-                    _debugLocalizerTest = $"Localizer['NoAccessMessage'] = '{Localizer["NoAccessMessage"]}'";
                 }
                 catch (CultureNotFoundException ex)
                 {
                     // If culture code is invalid, just skip it
-                    _debugFinalCulture = $"CultureNotFoundException: {ex.Message}";
+                    // _debugFinalCulture = $"CultureNotFoundException: {ex.Message}";
                 }
             }
 
@@ -465,7 +465,7 @@ else
             try
             {
                 var cookieCulture = await JSRuntime.InvokeAsync<string>("GIBS.DataRoom.getCultureFromCookie");
-                _debugCookieCulture = $"Cookie culture: '{cookieCulture}'";
+                // _debugCookieCulture = $"Cookie culture: '{cookieCulture}'";
 
                 // Parse the cookie format: "c=it|uic=en" to extract content language
                 // The 'c=' part is what we need (content language)
@@ -486,7 +486,7 @@ else
                 // If we found a content language in the cookie, use it to set CurrentUICulture
                 if (!string.IsNullOrEmpty(contentLanguage))
                 {
-                    _debugCookieCulture += $" -> Content Lang: '{contentLanguage}'";
+                    // _debugCookieCulture += $" -> Content Lang: '{contentLanguage}'";
 
                     // Convert 2-letter code to full culture code if needed
                     string fullCultureCode = contentLanguage;
@@ -513,25 +513,25 @@ else
                         CultureInfo.CurrentCulture = uiCulture;
                         CultureInfo.CurrentUICulture = uiCulture;
                         _currentUICulture = uiCulture;  // Store in field for GetLocalizedString to use
-                        _debugFinalCulture = $"Culture set to {fullCultureCode} (from cookie)";
-                        // Test both the injected Localizer and our helper method
-                        var injectedValue = Localizer["NoAccessMessage"];
-                        var helperValue = GetLocalizedString("NoAccessMessage");
-                        _debugLocalizerTest = $"Localizer['NoAccessMessage'] = '{injectedValue}' | Helper = '{helperValue}'";
+                        // _debugFinalCulture = $"Culture set to {fullCultureCode} (from cookie)";
+                        // // Test both the injected Localizer and our helper method
+                        // var injectedValue = Localizer["NoAccessMessage"];
+                        // var helperValue = GetLocalizedString("NoAccessMessage");
+                        // _debugLocalizerTest = $"Localizer['NoAccessMessage'] = '{injectedValue}' | Helper = '{helperValue}'";
                     }
                     catch (CultureNotFoundException ex)
                     {
-                        _debugCookieCulture += $" - Error: {ex.Message}";
+                        // _debugCookieCulture += $" - Error: {ex.Message}";
                     }
                 }
 
                 _cultureLoaded = true; // Signal that culture is ready, trigger re-render
-                await SetLanguageAsync(_currentLanguage); // Ensure our language selector reflects the current language
+        //        await SetLanguageAsync(_currentLanguage); // Ensure our language selector reflects the current language
                 StateHasChanged(); // Refresh UI with updated debug info
             }
             catch (Exception ex)
             {
-                _debugCookieCulture = $"Error reading cookie: {ex.Message}";
+                // _debugCookieCulture = $"Error reading cookie: {ex.Message}";
                 _cultureLoaded = true; // Even if error, mark as loaded so page shows
                 StateHasChanged();
             }
@@ -858,26 +858,24 @@ else
     {
         try
         {
-            _currentLanguage = languageCode;
+            var normalizedLanguage = string.Equals(languageCode, "it", StringComparison.OrdinalIgnoreCase) ? "it" : "en";
+            var cultureName = normalizedLanguage == "it" ? "it-IT" : "en-US";
 
-            // Build the cookie value: "c=it|uic=en" format
-            string cookieValue = $"c={languageCode}|uic=en";
+            _currentLanguage = normalizedLanguage;
 
-            // Update current UI culture field (used by GetLocalizedString)
-            var cultureInfo = new System.Globalization.CultureInfo(
-                languageCode == "it" ? "it-IT" : "en-US");
-            System.Globalization.CultureInfo.CurrentUICulture = cultureInfo;
-            _currentUICulture = cultureInfo; // Update our field so GetLocalizedString uses it
+            var cultureInfo = CultureInfo.GetCultureInfo(cultureName);
+            CultureInfo.CurrentCulture = cultureInfo;
+            CultureInfo.CurrentUICulture = cultureInfo;
+            _currentUICulture = cultureInfo;
 
-            // Trigger re-render immediately with new language
+            var cookieValue = $"c={normalizedLanguage}|uic={normalizedLanguage}";
+
             StateHasChanged();
-
-            // Set the cookie in background (fire and forget) for persistence on future loads
-            _ = JSRuntime.InvokeVoidAsync("GIBS.DataRoom.setCultureCookie", cookieValue);
+            await JSRuntime.InvokeVoidAsync("GIBS.DataRoom.setCultureCookie", cookieValue);
         }
         catch (Exception ex)
         {
-            // Silent fail - language switch happened, cookie setting failed is not critical
+            await logger.LogError(ex, "Error setting language to {LanguageCode}", languageCode);
         }
     }
 

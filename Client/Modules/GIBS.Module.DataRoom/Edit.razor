@@ -581,7 +581,7 @@
                     try
                     {
                         // Call server endpoint to extract ZIP
-                        var url = $"{PageState.Alias.BaseUrl}api/DataRoom/extract/{_dataRoom.DataRoomId}/{ModuleState.ModuleId}/{fileId}";
+                        var url = $"{PageState.Alias.BaseUrl}api/DataRoom/extract/{_dataRoom.DataRoomId}/{ModuleState.ModuleId}/{fileId}?authmoduleid={ModuleState.ModuleId}";
                         using (var response = await HttpClient.PutAsync(url, null))
                         {
                             if (response.IsSuccessStatusCode)
@@ -1102,7 +1102,7 @@
                 moduleId = ModuleState.ModuleId
             };
 
-            var response = await HttpClient.PostAsJsonAsync($"/api/DataRoom/DeleteFile", request);
+            var response = await HttpClient.PostAsJsonAsync($"/api/DataRoom/DeleteFile?authmoduleid={ModuleState.ModuleId}", request);
 
             if (response.IsSuccessStatusCode)
             {
