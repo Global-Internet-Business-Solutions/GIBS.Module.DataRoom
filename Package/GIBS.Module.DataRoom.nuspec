@@ -23,11 +23,20 @@
     <files>
         <file src="..\Client\bin\Release\$targetframework$\$ProjectName$.Client.Oqtane.dll" target="lib\$targetframework$" />
         <file src="..\Client\bin\Release\$targetframework$\$ProjectName$.Client.Oqtane.pdb" target="lib\$targetframework$" />
-        <file src="..\Client\bin\Release\$targetframework$\it-IT\$ProjectName$.Client.Oqtane.resources.dll" target="lib\$targetframework$\it-IT" />
         <file src="..\Server\bin\Release\$targetframework$\$ProjectName$.Server.Oqtane.dll" target="lib\$targetframework$" />
         <file src="..\Server\bin\Release\$targetframework$\$ProjectName$.Server.Oqtane.pdb" target="lib\$targetframework$" />
         <file src="..\Shared\bin\Release\$targetframework$\$ProjectName$.Shared.Oqtane.dll" target="lib\$targetframework$" />
         <file src="..\Shared\bin\Release\$targetframework$\$ProjectName$.Shared.Oqtane.pdb" target="lib\$targetframework$" />
+
+      <!-- Localization satellite assemblies for it culture -->
+      <file src="..\Client\bin\Release\$targetframework$\it\$ProjectName$.Client.Oqtane.resources.dll" target="lib\$targetframework$\it" />
+      <file src="..\Server\bin\Release\$targetframework$\it\$ProjectName$.Server.Oqtane.resources.dll" target="lib\$targetframework$\it" />
+      <file src="..\Shared\bin\Release\$targetframework$\it\$ProjectName$.Shared.Oqtane.resources.dll" target="lib\$targetframework$\it" />
+      <!-- Localization satellite assemblies for it-IT culture -->
+      <file src="..\Client\bin\Release\$targetframework$\it-IT\$ProjectName$.Client.Oqtane.resources.dll" target="lib\$targetframework$\it-IT" />
+      <file src="..\Server\bin\Release\$targetframework$\it-IT\$ProjectName$.Server.Oqtane.resources.dll" target="lib\$targetframework$\it-IT" />
+      <file src="..\Shared\bin\Release\$targetframework$\it-IT\$ProjectName$.Shared.Oqtane.resources.dll" target="lib\$targetframework$\it-IT" />
+
         <file src="..\Server\obj\Release\$targetframework$\staticwebassets\msbuild.$ProjectName$.Microsoft.AspNetCore.StaticWebAssetEndpoints.props" target="build\Microsoft.AspNetCore.StaticWebAssetEndpoints.props" />
         <file src="..\Server\obj\Release\$targetframework$\staticwebassets\msbuild.$ProjectName$.Microsoft.AspNetCore.StaticWebAssets.props" target="build\Microsoft.AspNetCore.StaticWebAssets.props" />
         <file src="..\Server\obj\Release\$targetframework$\staticwebassets\msbuild.build.$ProjectName$.props" target="build\$ProjectName$.props" />

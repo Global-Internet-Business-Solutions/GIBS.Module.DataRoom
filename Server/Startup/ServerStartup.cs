@@ -12,7 +12,7 @@ namespace GIBS.Module.DataRoom.Startup
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             // not implemented
-            app.UseRequestLocalization();
+        //    app.UseRequestLocalization();
         }
 
         public void ConfigureMvc(IMvcBuilder mvcBuilder)
@@ -26,6 +26,8 @@ namespace GIBS.Module.DataRoom.Startup
             services.AddTransient<IDataRoomActivityLogService, ServerDataRoomActivityLogService>();
             services.AddTransient<IDataRoomSubscriptionService, ServerDataRoomSubscriptionService>();
             services.AddDbContextFactory<DataRoomContext>(opt => { }, ServiceLifetime.Transient);
+
+            services.AddLocalization(options => options.ResourcesPath = "Resources");
         }
     }
 }

@@ -33,8 +33,7 @@ namespace GIBS.Module.DataRoom.Migrations
                 nullable: false,
                 defaultValue: 0);
 
-            var dataRoomBuilder = new DataRoomSubscriptionBuilder(migrationBuilder, ActiveDatabase);
-            dataRoomBuilder.Create();
+
 
         }
 
@@ -48,9 +47,6 @@ namespace GIBS.Module.DataRoom.Migrations
                 name: "FolderId",
                 table: "GIBSDataRoomSubscription");
 
-           
-            var dataRoomBuilder = new DataRoomSubscriptionBuilder(migrationBuilder, ActiveDatabase);
-            dataRoomBuilder.Drop();
         }
     }
 }

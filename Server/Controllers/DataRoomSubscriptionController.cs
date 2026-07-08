@@ -96,5 +96,29 @@ namespace GIBS.Module.DataRoom.Controllers
             _logger.Log(LogLevel.Error, this, LogFunction.Security, "Unauthorized Subscription Delete Attempt {SubscriptionId} {ModuleId}", id, moduleid);
             HttpContext.Response.StatusCode = (int)HttpStatusCode.Forbidden;
         }
+
+        [HttpPost("confirm-email")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ConfirmEmail([FromQuery] string token, [FromQuery] string moduleid)
+        {
+            if (string.IsNullOrWhiteSpace(token) || !int.TryParse(moduleid, out var moduleId) || !IsAuthorizedEntityId(EntityNames.Module, moduleId))
+            {
+                _logger.Log(LogLevel.Warning, this, LogFunction.Security, "Unauthorized Email Confirmation Attempt");
+                HttpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+                return BadRequest("Invalid confirmation request");
+            }
+
+            var confirmed = await _subscriptionService.ConfirmSubscriptionEmailAsync(token, moduleId);
+
+            if (confirmed)
+            {
+                _logger.Log(LogLevel.Information, this, LogFunction.Other, "Subscription email confirmed with token");
+                return Ok(new { success = true, message = "Your subscription has been confirmed!" });
+            }
+
+            _logger.Log(LogLevel.Warning, this, LogFunction.Other, "Failed to confirm subscription email - invalid or expired token");
+            HttpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            return BadRequest("Invalid or expired confirmation token");
+        }
     }
 }

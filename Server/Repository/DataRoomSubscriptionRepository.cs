@@ -9,6 +9,7 @@ namespace GIBS.Module.DataRoom.Repository
     public interface IDataRoomSubscriptionRepository
     {
         IEnumerable<Subscription> GetSubscriptions(int dataRoomId);
+        IEnumerable<Subscription> GetSubscriptionsAll();
         Subscription GetSubscription(int subscriptionId);
         Subscription GetSubscription(int subscriptionId, bool tracking);
         Subscription AddSubscription(Subscription subscription);
@@ -30,6 +31,14 @@ namespace GIBS.Module.DataRoom.Repository
             using var db = _factory.CreateDbContext();
             return db.DataRoomSubscription
                 .Where(item => item.DataRoomId == dataRoomId)
+                .OrderBy(item => item.Email)
+                .ToList();
+        }
+
+        public IEnumerable<Subscription> GetSubscriptionsAll()
+        {
+            using var db = _factory.CreateDbContext();
+            return db.DataRoomSubscription
                 .OrderBy(item => item.Email)
                 .ToList();
         }

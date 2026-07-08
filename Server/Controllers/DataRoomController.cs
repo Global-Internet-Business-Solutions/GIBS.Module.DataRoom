@@ -492,6 +492,147 @@ namespace GIBS.Module.DataRoom.Controllers
             }
         }
 
+        [HttpPost("CreateFolder")]
+        [Authorize(Policy = PolicyNames.EditModule)]
+        public async Task<IActionResult> CreateFolder([FromBody] CreateFolderRequest request)
+        {
+            if (!IsAuthorizedEntityId(EntityNames.Module, request.ModuleId))
+            {
+                _logger.Log(LogLevel.Error, this, LogFunction.Security, "Unauthorized CreateFolder Attempt");
+                return StatusCode((int)HttpStatusCode.Forbidden);
+            }
+
+            var dataRoom = await _DataRoomService.GetDataRoomAsync(request.DataRoomId, request.ModuleId);
+            if (dataRoom == null) return NotFound();
+
+            // Verify parent folder belongs to this DataRoom
+            var allowedFolderIds = GetAllowedFolderIds(dataRoom.FolderId, dataRoom.SiteId);
+            if (!allowedFolderIds.Contains(request.ParentFolderId))
+            {
+                _logger.Log(LogLevel.Error, this, LogFunction.Security, "Parent Folder {ParentFolderId} Does Not Belong To DataRoom {DataRoomId}", request.ParentFolderId, request.DataRoomId);
+                return StatusCode((int)HttpStatusCode.Forbidden);
+            }
+
+            try
+            {
+                // Get the parent folder to inherit permissions
+                var parentFolder = _folderRepository.GetFolder(request.ParentFolderId);
+                if (parentFolder == null)
+                {
+                    _logger.Log(LogLevel.Error, this, LogFunction.Security, "Parent Folder {ParentFolderId} Not Found", request.ParentFolderId);
+                    return NotFound();
+                }
+
+                // Build the path for the new folder
+                var path = Utilities.UrlCombine(parentFolder.Path, request.FolderName);
+                if (!path.EndsWith('/'))
+                {
+                    path += "/";
+                }
+
+                var folder = new Folder
+                {
+                    Name = request.FolderName,
+                    ParentId = request.ParentFolderId,
+                    SiteId = dataRoom.SiteId,
+                    Type = parentFolder.Type,
+                    Path = path,
+                    Order = 1,
+                    ImageSizes = parentFolder.ImageSizes,
+                    Capacity = parentFolder.Capacity,
+                    IsSystem = false,
+                    CacheControl = parentFolder.CacheControl,
+                    PermissionList = CreateChildFolderPermissions(parentFolder)
+                };
+
+                _folderRepository.AddFolder(folder);
+
+                _logger.Log(LogLevel.Information, this, LogFunction.Create, "Folder {FolderName} Created (ID: {FolderId})", request.FolderName, folder.FolderId);
+
+                await _activityLogService.AddActivityLogAsync(new DataRoomActivityLog
+                {
+                    DataRoomId = request.DataRoomId,
+                    FileId = 0,
+                    UserId = User.UserId().ToString(),
+                    Action = "CreateFolder",
+                    Timestamp = DateTime.UtcNow,
+                    IPAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty
+                }, request.ModuleId);
+
+                return Ok(new { success = true, message = "Folder created successfully.", folderId = folder.FolderId });
+            }
+            catch (Exception ex)
+            {
+                _logger.Log(LogLevel.Error, this, LogFunction.Create, "Error Creating Folder {FolderName}: {Error}", request.FolderName, ex.Message);
+                return StatusCode((int)HttpStatusCode.InternalServerError, new { success = false, message = "Error creating folder." });
+            }
+        }
+
+        [HttpPost("DeleteFolder")]
+        [Authorize(Policy = PolicyNames.EditModule)]
+        public async Task<IActionResult> DeleteFolder([FromBody] DeleteFolderRequest request)
+        {
+            if (!IsAuthorizedEntityId(EntityNames.Module, request.ModuleId))
+            {
+
+                return StatusCode((int)HttpStatusCode.Forbidden);
+            }
+
+            var dataRoom = await _DataRoomService.GetDataRoomAsync(request.DataRoomId, request.ModuleId);
+            if (dataRoom == null) return NotFound();
+
+            // Verify folder belongs to this DataRoom
+            var allowedFolderIds = GetAllowedFolderIds(dataRoom.FolderId, dataRoom.SiteId);
+            if (!allowedFolderIds.Contains(request.FolderId))
+            {
+                _logger.Log(LogLevel.Error, this, LogFunction.Security, "Folder {FolderId} Does Not Belong To DataRoom {DataRoomId}", request.FolderId, request.DataRoomId);
+                return StatusCode((int)HttpStatusCode.Forbidden);
+            }
+
+            try
+            {
+                // Check if folder is empty before deletion
+                var files = _fileRepository.GetFiles(request.FolderId);
+                if (files.Any())
+                {
+                    _logger.Log(LogLevel.Warning, this, LogFunction.Delete, "Cannot delete non-empty folder {FolderId}", request.FolderId);
+                    return BadRequest(new { success = false, message = "Folder is not empty. Please remove all files before deleting." });
+                }
+
+                var folder = _folderRepository.GetFolder(request.FolderId);
+                if (folder == null)
+                {
+                    _logger.Log(LogLevel.Error, this, LogFunction.Security, "Folder {FolderId} Not Found", request.FolderId);
+                    return NotFound();
+                }
+
+                var folderName = folder.Name;
+
+                // Delete folder using repository
+                _folderRepository.DeleteFolder(request.FolderId);
+
+                _logger.Log(LogLevel.Information, this, LogFunction.Delete, "Folder {FolderId} ({FolderName}) Deleted", request.FolderId, folderName);
+
+                // Log activity - use FileId as 0 since DataRoomActivityLog doesn't have FolderId
+                await _activityLogService.AddActivityLogAsync(new DataRoomActivityLog
+                {
+                    DataRoomId = request.DataRoomId,
+                    FileId = 0,
+                    UserId = User.UserId().ToString(),
+                    Action = "DeleteFolder",
+                    Timestamp = DateTime.UtcNow,
+                    IPAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty
+                }, request.ModuleId);
+
+                return Ok(new { success = true, message = "Folder deleted successfully." });
+            }
+            catch (Exception ex)
+            {
+                _logger.Log(LogLevel.Error, this, LogFunction.Delete, "Error Deleting Folder {FolderId}: {Error}", request.FolderId, ex.Message);
+                return StatusCode((int)HttpStatusCode.InternalServerError, new { success = false, message = "Error deleting folder." });
+            }
+        }
+
         [HttpPost("Rename")]
         [Authorize(Policy = PolicyNames.EditModule)]
         public async Task<IActionResult> Rename([FromBody] RenameRequest request)
@@ -611,6 +752,21 @@ namespace GIBS.Module.DataRoom.Controllers
         public class DeleteFileRequest
         {
             public int FileId { get; set; }
+            public int DataRoomId { get; set; }
+            public int ModuleId { get; set; }
+        }
+
+        public class CreateFolderRequest
+        {
+            public string FolderName { get; set; }
+            public int ParentFolderId { get; set; }
+            public int DataRoomId { get; set; }
+            public int ModuleId { get; set; }
+        }
+
+        public class DeleteFolderRequest
+        {
+            public int FolderId { get; set; }
             public int DataRoomId { get; set; }
             public int ModuleId { get; set; }
         }

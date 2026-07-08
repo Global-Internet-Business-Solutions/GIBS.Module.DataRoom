@@ -25,26 +25,8 @@
         <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
     </div>
 }
-else if (!_cultureLoaded)
-{
-    <!-- Waiting for culture to load in OnAfterRenderAsync -->
-    <div class="text-center py-3">
-        <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
-    </div>
-}
-// else if (true && !string.IsNullOrEmpty(_debugPageStateUserCulture) && _showDebug)
-// {
-//     <!-- DEBUG INFO -->
-//     <div class="alert alert-warning alert-dismissible fade show" role="alert">
-//         <strong>?? DEBUG INFO:</strong>
-//         <br /><small>@_debugCookieCulture</small>
-//         <br /><small>@_debugPageStateUserCulture</small>
-//         <br /><small>@_debugSiteLanguages</small>
-//         <br /><small>@_debugFinalCulture</small>
-//         <br /><small>@_debugLocalizerTest</small>
-//         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" @onclick="() => _showDebug = false"></button>
-//     </div>
-// }
+
+
 else if (_dataRoom == null)
 {
     <div class="alert alert-info">
@@ -59,35 +41,16 @@ else if (_dataRoom == null)
 }
 else if (!_dataRoom.IsActive)
 {
-    <div class="alert alert-warning mb-0">@GetLocalizedString("InactiveMessage")</div>
+    <div class="alert alert-warning mb-0">@Localizer["InactiveMessage"]</div>
+    <ActionLink Action="Edit" Parameters="@($"id={_dataRoom?.DataRoomId ?? 0}")" Text="@Localizer["Configure"]" Class="btn btn-sm btn-primary mt-2" />
 }
 else if (!_isViewRoleAuthorized)
 {
-    <div class="alert alert-danger mb-0">@GetLocalizedString("NotAuthorizedMessage")</div>
+    <div class="alert alert-danger mb-0">@Localizer["NotAuthorizedMessage"]</div>
 }
 else
 {
-    <!-- SAVE CustomLanguageSelector -->
-@*     <div class="text-end mb-3">
-        <div class="btn-group" role="group" style="box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 6px; overflow: hidden;">
-            <button type="button" 
-                    class="btn @(_currentLanguage == "en" ? "btn-primary" : "btn-light")"
-                    @onclick='async () => await SetLanguageAsync("en")'
-                    title="English"
-                    style="padding: 8px 16px; border: none; font-weight: 500; transition: all 0.2s ease;">
-                <span class="badge bg-secondary rounded-pill me-2">EN</span>
-                English
-            </button>
-            <button type="button" 
-                    class="btn @(_currentLanguage == "it" ? "btn-primary" : "btn-light")"
-                    @onclick='async () => await SetLanguageAsync("it")'
-                    title="Italiano"
-                    style="padding: 8px 16px; border: none; font-weight: 500; transition: all 0.2s ease;">
-                <span class="badge bg-secondary rounded-pill me-2">IT</span>
-                Italiano
-            </button>
-        </div>
-    </div> *@
+   
     <div class="dataroom">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
@@ -102,7 +65,7 @@ else
                 {
                     <button class="btn btn-sm btn-outline-secondary" @onclick="DownloadZipAsync"
                             title="Download all files as a ZIP archive">
-                        <span class="oi oi-data-transfer-download me-1"></span>@GetLocalizedString("DownloadAllZip")
+                        <span class="oi oi-data-transfer-download me-1"></span>@Localizer["DownloadAllZip"]
                     </button>
                 }
 
@@ -110,13 +73,13 @@ else
                 {
                     @if (_userSubscription != null && _userSubscription.SubscriptionId > 0)
                     {
-                        <button class="btn btn-sm btn-outline-success" @onclick="UnsubscribeAsync" disabled="@_subscriptionBusy" title="@GetLocalizedString("UnsubscribeFromNotifications")">
-                            <span class="oi oi-bell me-1" style="color: green;"></span>@GetLocalizedString("Subscribed")
+                        <button class="btn btn-sm btn-outline-success" @onclick="UnsubscribeAsync" disabled="@_subscriptionBusy" title="@Localizer["UnsubscribeFromNotifications"]">
+                            <span class="oi oi-bell me-1" style="color: green;"></span>@Localizer["Subscribed"]
                         </button>
                     }
                     else
                     {
-                        <button class="btn btn-sm btn-outline-secondary" @onclick="SubscribeAsync" disabled="@_subscriptionBusy" title="@Localizer["SubscribeToNotifications"]">
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="OpenSubscribeDialogAsync" disabled="@_subscriptionBusy" title="@Localizer["SubscribeToNotifications"]">
                             <span class="oi oi-bell me-1"></span>@Localizer["Subscribe"]
                         </button>
                     }
@@ -126,7 +89,7 @@ else
 
                 @if (IsAuthorizedPermission(PermissionNames.Edit))
                 {
-                    <ActionLink Action="Edit" Parameters="@($"id={_dataRoom.DataRoomId}")" Class="btn btn-sm btn-outline-secondary" Text="@GetLocalizedString("Manage")" />
+                    <ActionLink Action="Edit" Parameters="@($"id={_dataRoom.DataRoomId}")" Class="btn btn-sm btn-outline-secondary" Text="@Localizer["Manage"]" />
                 }
             </div>
         </div>
@@ -136,16 +99,16 @@ else
         {
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <div>
-                    <span class="text-muted small"><b>@GetLocalizedString("CurrentFolder")</b> @_currentFolderPath</span>
+                    <span class="text-muted small"><b>@Localizer["CurrentFolder"]</b> @_currentFolderPath</span>
                     @if (GetFileCount() > 0)
                     {
                         <span class="ms-2 text-muted small">
-                            <b>@GetLocalizedString("Items")</b> @GetFileCount()
+                            <b>@Localizer["Items"]</b> @GetFileCount()
                         </span>
                     }
                 </div>
                 <button class="btn btn-sm btn-outline-secondary" @onclick="OpenParentFolder">
-                    <span class="oi oi-arrow-thick-left me-1"></span>@GetLocalizedString("UpOneLevel")
+                    <span class="oi oi-arrow-thick-left me-1"></span>@Localizer["UpOneLevel"]
                 </button>
             </div>
         }
@@ -160,34 +123,34 @@ else
                    Class="table table-striped table-hover table-sm align-middle mb-0">        
                 <Header>               
                     <th style="cursor: pointer;" @onclick='@(() => OnSortColumnChanged("Name"))'>
-                        @GetLocalizedString("Name")
+                        @Localizer["Name"]
                         @if (_sortColumn == "Name")
                         {
                             <span class="oi oi-sort-@(_sortDescending ? "descending" : "ascending")" style="margin-left: 5px;"></span>
                         }
                     </th>
                     <th style="cursor: pointer;" @onclick='@(() => OnSortColumnChanged("Type"))'>
-                        @GetLocalizedString("Type")
+                        @Localizer["Type"]
                         @if (_sortColumn == "Type")
                         {
                             <span class="oi oi-sort-@(_sortDescending ? "descending" : "ascending")" style="margin-left: 5px;"></span>
                         }
                     </th>
                     <th style="cursor: pointer;" @onclick='@(() => OnSortColumnChanged("Size"))'>
-                        @GetLocalizedString("Size")
+                        @Localizer["Size"]
                         @if (_sortColumn == "Size")
                         {
                             <span class="oi oi-sort-@(_sortDescending ? "descending" : "ascending")" style="margin-left: 5px;"></span>
                         }
                     </th>
                     <th style="cursor: pointer;" @onclick='@(() => OnSortColumnChanged("ModifiedOn"))'>
-                        @GetLocalizedString("Modified")
+                        @Localizer["Modified"]
                         @if (_sortColumn == "ModifiedOn")
                         {
                             <span class="oi oi-sort-@(_sortDescending ? "descending" : "ascending")" style="margin-left: 5px;"></span>
                         }
                     </th>
-                    <th class="text-end">@GetLocalizedString("Action") </th>          
+                    <th class="text-end">@Localizer["Action"] </th>
                 </Header>
 
                 <Row Context="item">
@@ -198,12 +161,12 @@ else
                                 <span class="oi oi-folder me-1"></span>@item.Name
                             </button>
                         </td>
-                        <td><span class="badge bg-light text-dark border">@GetLocalizedString("Folder")</span></td>
+                        <td><span class="badge bg-light text-dark border">@Localizer["Folder"]</span></td>
                         <td></td>
                         <td></td>
                         <td class="text-end">
-                            <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenFolder(item.FolderId)">@GetLocalizedString("Open")</button>
-                            <span class="badge bg-light text-dark border">@GetFileCount(item.FolderId) @GetLocalizedString("Files")</span>
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => OpenFolder(item.FolderId)">@Localizer["Open"]</button>
+                            <span class="badge bg-light text-dark border">@GetFileCount(item.FolderId) @Localizer["Files"]</span>
                         </td>
                     }
                     else
@@ -225,7 +188,7 @@ else
                                     <button class="btn btn-sm btn-primary"
                                             @onclick="@(async () => await DownloadFileAsync(item.FileId, item.Name))"
                                             title="Download @item.Name">
-                                        <span class="oi oi-cloud-download me-1"></span>@GetLocalizedString("Download")
+                                        <span class="oi oi-cloud-download me-1"></span>@Localizer["Download"]
                                     </button>
                                 }
                             }
@@ -233,7 +196,7 @@ else
                             {
                                 @if (_dataRoom.EnableViewOnly)
                                 {
-                                    <ActionLink Action="View" Parameters="@($"fileid={item.FileId}&dataroomid={_dataRoom.DataRoomId}")" IconName="eye" Text="@GetLocalizedString("View")" Class="btn btn-sm btn-info text-white me-1">
+                                    <ActionLink Action="View" Parameters="@($"fileid={item.FileId}&dataroomid={_dataRoom.DataRoomId}")" IconName="eye" Text="@Localizer["View"]" Class="btn btn-sm btn-info text-white me-1">
                                     </ActionLink>
                                 }
                                 @if (_dataRoom.EnableDownload)
@@ -241,12 +204,12 @@ else
                                     <button class="btn btn-sm btn-primary"
                                             @onclick="@(async () => await DownloadFileAsync(item.FileId, item.Name))"
                                             title="Download @item.Name">
-                                        <span class="oi oi-cloud-download me-1"></span>@GetLocalizedString("Download")
+                                        <span class="oi oi-cloud-download me-1"></span>@Localizer["Download"]
                                     </button>
                                 }
                                 @if (!_dataRoom.EnableViewOnly && !_dataRoom.EnableDownload)
                                 {
-                                    <span class="text-muted small">@GetLocalizedString("AccessRestricted")</span>
+                                    <span class="text-muted small">@Localizer["AccessRestricted"]</span>
                                 }
                             }
                         </td>
@@ -258,9 +221,57 @@ else
         {
             <div class="text-center text-muted py-5">
                 <div class="oi oi-inbox" style="font-size:2rem;"></div>
-                <p class="mt-2 mb-0">@GetLocalizedString("NoDocumentsAvailable")</p>
+                <p class="mt-2 mb-0">@Localizer["NoDocumentsAvailable"]</p>
             </div>
         }
+    </div>
+}
+
+<!-- Subscription Dialog Modal -->
+@if (_showSubscribeDialog)
+{
+    <div class="modal fade show d-block" role="dialog" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@Localizer["SubscribeFolderNotifications"]</h5>
+                    <button type="button" class="btn-close" @onclick="() => _showSubscribeDialog = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">@Localizer["Folder"]</label>
+                        <div class="form-control" style="height: auto; padding: 0.75rem;">
+                            <strong>@_currentFolderPath</strong>
+                        </div>
+                    </div>
+
+                    @if (_currentFolderHasSubfolders)
+                    {
+                        <div class="mb-3 form-check">
+                            <input type="checkbox" class="form-check-input" id="includeSubfolders" @bind="_includeSubfolders" />
+                            <label class="form-check-label" for="includeSubfolders">
+                                @Localizer["IncludeSubfolders"]
+                            </label>
+                            <small class="d-block text-muted mt-1">
+                                @Localizer["IncludeSubfoldersHelp"]
+                            </small>
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <p class="text-muted small">@Localizer["NotifyOnUploadDescription"]</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => _showSubscribeDialog = false">
+                        @Localizer["Cancel"]
+                    </button>
+                    <button type="button" class="btn btn-primary" @onclick="ConfirmSubscribeAsync" disabled="@_subscriptionBusy">
+                        @Localizer["Subscribe"]
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 }
 
@@ -278,7 +289,7 @@ else
     };
 
     private bool _initialized;
-    private bool _cultureLoaded; // Flag to trigger re-render after culture is loaded
+    
     private DataRoom _dataRoom;
     private List<Oqtane.Models.File> _files;
     private List<Folder> _folders = new();
@@ -293,9 +304,12 @@ else
     private Subscription _userSubscription;
     private bool _isSubscribed;
     private bool _subscriptionBusy;
+    private bool _showSubscribeDialog;
+    private bool _includeSubfolders = true;
+    private bool _currentFolderHasSubfolders;
     private string _anonymousSubscriptionEmail = string.Empty;
-    private string _currentLanguage = "";
-    private CultureInfo _currentUICulture = CultureInfo.InvariantCulture;
+ 
+   // private CultureInfo _currentUICulture = CultureInfo.InvariantCulture;
 
     // DEBUG
     // private string _debugPageStateUserCulture = "";
@@ -319,52 +333,18 @@ else
 
 
             // Set default language from site's default language
-            _currentLanguage = PageState?.Site?.Languages?.FirstOrDefault(l => l.IsDefault)?.Code ?? _defaultLanguage;
+      //      _currentLanguage = PageState?.Site?.Languages?.FirstOrDefault(l => l.IsDefault)?.Code ?? _defaultLanguage;
 
             // Note: Cannot call JS interop during OnInitializedAsync - component not fully interactive yet
             // Convert 2-letter language code to full culture code
-            var uiCultureCode = _currentLanguage;
+     //       var uiCultureCode = _currentLanguage;
             // _debugCookieCulture = $"(Will be overridden by cookie in OnAfterRenderAsync if present)";
 
             // DEBUG: Log what we're getting
             // _debugPageStateUserCulture = $"Page Language Setting = '{_currentLanguage}'";
             // _debugSiteLanguages = $"Site Languages: {string.Join(", ", PageState?.Site?.Languages?.Select(l => $"{l.Code}(Default={l.IsDefault})") ?? new List<string>())}";
 
-            if (!string.IsNullOrWhiteSpace(uiCultureCode))
-            {
-                try
-                {
-                    // Handle 2-letter language codes (e.g., "it" -> "it-IT")
-                    if (!uiCultureCode.Contains("-"))
-                    {
-                        var cultures = CultureInfo.GetCultures(CultureTypes.AllCultures)
-                            .Where(c => c.TwoLetterISOLanguageName.Equals(uiCultureCode, StringComparison.OrdinalIgnoreCase))
-                            .ToList();
 
-                        // Prefer the standard region code (e.g., "it-IT" for Italian, "en-US" for English)
-                        // Try language-LANGUAGE first, then first non-neutral culture
-                        var upperLang = uiCultureCode.ToUpper();
-                        var specificCulture = cultures.FirstOrDefault(c => c.Name == $"{uiCultureCode}-{upperLang}")
-                            ?? cultures.FirstOrDefault(c => !c.IsNeutralCulture);
-
-                        if (specificCulture != null)
-                        {
-                            uiCultureCode = specificCulture.Name;
-                        }
-                    }
-
-                    var uiCulture = CultureInfo.GetCultureInfo(uiCultureCode);
-                    CultureInfo.CurrentCulture = uiCulture;
-                    CultureInfo.CurrentUICulture = uiCulture;
-                    _currentUICulture = uiCulture; // Store in field for GetLocalizedString to use
-
-                }
-                catch (CultureNotFoundException ex)
-                {
-                    // If culture code is invalid, just skip it
-                    // _debugFinalCulture = $"CultureNotFoundException: {ex.Message}";
-                }
-            }
 
 
 
@@ -456,87 +436,87 @@ else
         }
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        // After first render, try to read the cookie from JavaScript
-        // since JS interop is not available during OnInitializedAsync
-        if (firstRender)
-        {
-            try
-            {
-                var cookieCulture = await JSRuntime.InvokeAsync<string>("GIBS.DataRoom.getCultureFromCookie");
-                // _debugCookieCulture = $"Cookie culture: '{cookieCulture}'";
+    // protected override async Task OnAfterRenderAsync(bool firstRender)
+    // {
+    //     // After first render, try to read the cookie from JavaScript
+    //     // since JS interop is not available during OnInitializedAsync
+    //     if (firstRender)
+    //     {
+    //         try
+    //         {
+    //             var cookieCulture = await JSRuntime.InvokeAsync<string>("GIBS.DataRoom.getCultureFromCookie");
+    //             // _debugCookieCulture = $"Cookie culture: '{cookieCulture}'";
 
-                // Parse the cookie format: "c=it|uic=en" to extract content language
-                // The 'c=' part is what we need (content language)
-                string contentLanguage = null;
-                if (!string.IsNullOrEmpty(cookieCulture))
-                {
-                    var parts = cookieCulture.Split('|');
-                    foreach (var part in parts)
-                    {
-                        if (part.StartsWith("c="))
-                        {
-                            contentLanguage = part.Substring(2).Trim();
-                            break;
-                        }
-                    }
-                }
+    //             // Parse the cookie format: "c=it|uic=en" to extract content language
+    //             // The 'c=' part is what we need (content language)
+    //             string contentLanguage = null;
+    //             if (!string.IsNullOrEmpty(cookieCulture))
+    //             {
+    //                 var parts = cookieCulture.Split('|');
+    //                 foreach (var part in parts)
+    //                 {
+    //                     if (part.StartsWith("c="))
+    //                     {
+    //                         contentLanguage = part.Substring(2).Trim();
+    //                         break;
+    //                     }
+    //                 }
+    //             }
 
-                // If we found a content language in the cookie, use it to set CurrentUICulture
-                if (!string.IsNullOrEmpty(contentLanguage))
-                {
-                    // _debugCookieCulture += $" -> Content Lang: '{contentLanguage}'";
+    //             // If we found a content language in the cookie, use it to set CurrentUICulture
+    //             if (!string.IsNullOrEmpty(contentLanguage))
+    //             {
+    //                 // _debugCookieCulture += $" -> Content Lang: '{contentLanguage}'";
 
-                    // Convert 2-letter code to full culture code if needed
-                    string fullCultureCode = contentLanguage;
-                    if (!contentLanguage.Contains("-"))
-                    {
-                        var cultures = CultureInfo.GetCultures(CultureTypes.AllCultures)
-                            .Where(c => c.TwoLetterISOLanguageName.Equals(contentLanguage, StringComparison.OrdinalIgnoreCase))
-                            .ToList();
+    //                 // Convert 2-letter code to full culture code if needed
+    //                 string fullCultureCode = contentLanguage;
+    //                 if (!contentLanguage.Contains("-"))
+    //                 {
+    //                     var cultures = CultureInfo.GetCultures(CultureTypes.AllCultures)
+    //                         .Where(c => c.TwoLetterISOLanguageName.Equals(contentLanguage, StringComparison.OrdinalIgnoreCase))
+    //                         .ToList();
 
-                        var upperLang = contentLanguage.ToUpper();
-                        var specificCulture = cultures.FirstOrDefault(c => c.Name == $"{contentLanguage}-{upperLang}")
-                            ?? cultures.FirstOrDefault(c => !c.IsNeutralCulture);
+    //                     var upperLang = contentLanguage.ToUpper();
+    //                     var specificCulture = cultures.FirstOrDefault(c => c.Name == $"{contentLanguage}-{upperLang}")
+    //                         ?? cultures.FirstOrDefault(c => !c.IsNeutralCulture);
 
-                        if (specificCulture != null)
-                        {
-                            fullCultureCode = specificCulture.Name;
-                        }
-                    }
+    //                     if (specificCulture != null)
+    //                     {
+    //                         fullCultureCode = specificCulture.Name;
+    //                     }
+    //                 }
 
-                    // Set the UI culture to the content language from the cookie
-                    try
-                    {
-                        var uiCulture = CultureInfo.GetCultureInfo(fullCultureCode);
-                        CultureInfo.CurrentCulture = uiCulture;
-                        CultureInfo.CurrentUICulture = uiCulture;
-                        _currentUICulture = uiCulture;  // Store in field for GetLocalizedString to use
-                        // _debugFinalCulture = $"Culture set to {fullCultureCode} (from cookie)";
-                        // // Test both the injected Localizer and our helper method
-                        // var injectedValue = Localizer["NoAccessMessage"];
-                        // var helperValue = GetLocalizedString("NoAccessMessage");
-                        // _debugLocalizerTest = $"Localizer['NoAccessMessage'] = '{injectedValue}' | Helper = '{helperValue}'";
-                    }
-                    catch (CultureNotFoundException ex)
-                    {
-                        // _debugCookieCulture += $" - Error: {ex.Message}";
-                    }
-                }
+    //                 // Set the UI culture to the content language from the cookie
+    //                 try
+    //                 {
+    //                     var uiCulture = CultureInfo.GetCultureInfo(fullCultureCode);
+    //                     CultureInfo.CurrentCulture = uiCulture;
+    //                     CultureInfo.CurrentUICulture = uiCulture;
+    //                     _currentUICulture = uiCulture;  // Store in field for GetLocalizedString to use
+    //                     // _debugFinalCulture = $"Culture set to {fullCultureCode} (from cookie)";
+    //                     // // Test both the injected Localizer and our helper method
+    //                     // var injectedValue = Localizer["NoAccessMessage"];
+    //                     // var helperValue = GetLocalizedString("NoAccessMessage");
+    //                     // _debugLocalizerTest = $"Localizer['NoAccessMessage'] = '{injectedValue}' | Helper = '{helperValue}'";
+    //                 }
+    //                 catch (CultureNotFoundException ex)
+    //                 {
+    //                     // _debugCookieCulture += $" - Error: {ex.Message}";
+    //                 }
+    //             }
 
-                _cultureLoaded = true; // Signal that culture is ready, trigger re-render
-        //        await SetLanguageAsync(_currentLanguage); // Ensure our language selector reflects the current language
-                StateHasChanged(); // Refresh UI with updated debug info
-            }
-            catch (Exception ex)
-            {
-                // _debugCookieCulture = $"Error reading cookie: {ex.Message}";
-                _cultureLoaded = true; // Even if error, mark as loaded so page shows
-                StateHasChanged();
-            }
-        }
-    }
+    //             _cultureLoaded = true; // Signal that culture is ready, trigger re-render
+    //     //        await SetLanguageAsync(_currentLanguage); // Ensure our language selector reflects the current language
+    //             StateHasChanged(); // Refresh UI with updated debug info
+    //         }
+    //         catch (Exception ex)
+    //         {
+    //             // _debugCookieCulture = $"Error reading cookie: {ex.Message}";
+    //             _cultureLoaded = true; // Even if error, mark as loaded so page shows
+    //             StateHasChanged();
+    //         }
+    //     }
+    // }
 
     private bool IsUserAuthorizedForViewRole(string viewRoleSetting)
     {
@@ -729,6 +709,11 @@ else
         return string.Join("/", segments);
     }
 
+    private bool HasSubfolders(int folderId)
+    {
+        return _folders.Any(f => f.ParentId == folderId && _allowedFolderIds.Contains(f.FolderId));
+    }
+
     private List<FolderBrowserItem> ApplySorting(List<FolderBrowserItem> items)
     {
         return _sortColumn switch
@@ -854,32 +839,30 @@ else
         };
     }
 
-    private async Task SetLanguageAsync(string languageCode)
+
+
+    private async Task OpenSubscribeDialogAsync()
     {
-        try
+        if (PageState?.User == null)
         {
-            var normalizedLanguage = string.Equals(languageCode, "it", StringComparison.OrdinalIgnoreCase) ? "it" : "en";
-            var cultureName = normalizedLanguage == "it" ? "it-IT" : "en-US";
-
-            _currentLanguage = normalizedLanguage;
-
-            var cultureInfo = CultureInfo.GetCultureInfo(cultureName);
-            CultureInfo.CurrentCulture = cultureInfo;
-            CultureInfo.CurrentUICulture = cultureInfo;
-            _currentUICulture = cultureInfo;
-
-            var cookieValue = $"c={normalizedLanguage}|uic={normalizedLanguage}";
-
-            StateHasChanged();
-            await JSRuntime.InvokeVoidAsync("GIBS.DataRoom.setCultureCookie", cookieValue);
+            AddModuleMessage("Please log in to subscribe.", MessageType.Warning);
+            return;
         }
-        catch (Exception ex)
-        {
-            await logger.LogError(ex, "Error setting language to {LanguageCode}", languageCode);
-        }
+
+        _currentFolderPath = GetCurrentFolderPath(_currentFolderId);
+        _currentFolderHasSubfolders = HasSubfolders(_currentFolderId);
+        _includeSubfolders = true;
+        _showSubscribeDialog = true;
+        StateHasChanged();
     }
 
-    private async Task SubscribeAsync()
+    private async Task ConfirmSubscribeAsync()
+    {
+        _showSubscribeDialog = false;
+        await SubscribeAsync(_currentFolderId, _includeSubfolders);
+    }
+
+    private async Task SubscribeAsync(int folderId, bool includeSubfolders)
     {
         try
         {
@@ -897,7 +880,9 @@ else
                 UserId = PageState.User.UserId,
                 NotifyOnUpload = true,
                 NotifyOnOverwrite = true,
-                IsActive = true
+                IsActive = true,
+                FolderId = folderId,
+                IncludeSubfolders = includeSubfolders
             };
 
             _userSubscription = await SubscriptionService.AddSubscriptionAsync(subscription, ModuleState.ModuleId);
@@ -947,22 +932,5 @@ else
     /// This is needed because IStringLocalizer caches based on the culture at component initialization,
     /// but we're setting the culture in OnAfterRenderAsync (after render).
     /// </summary>
-    private string GetLocalizedString(string key)
-    {
-        try
-        {
-            // Use ResourceManager to load strings based on the current stored culture
-            var assembly = typeof(GIBS.Module.DataRoom.Index).Assembly;
-            var baseName = "GIBS.Module.DataRoom.Resources.GIBS.Module.DataRoom.Index";
-            var rm = new System.Resources.ResourceManager(baseName, assembly);
-            var localized = rm.GetString(key, _currentUICulture);
-            return localized ?? key;
-        }
-        catch (Exception ex)
-        {
-            // If ResourceManager fails, fallback to the localizer
-            var value = Localizer[key];
-            return value.ResourceNotFound ? key : value;
-        }
-    }
+   
 }

@@ -151,7 +151,7 @@
     <value>Download All (Zip)</value>
   </data>
   <data name="Name" xml:space="preserve">
-    <value>Name</value>
+    <value>Name 1</value>
   </data>
   <data name="NoAccessMessage" xml:space="preserve">
     <value>You may not have permissions to access this data room. Please contact the site administrator.</value>
@@ -221,5 +221,11 @@
   </data>
   <data name="SubscribeToNotifications" xml:space="preserve">
     <value>Subscribe to notifications</value>
+  </data>
+  <data name="SubscribeFolderNotifications" xml:space="preserve">
+    <value>Subscribe Folder Notifications</value>
+  </data>
+  <data name="IncludeSubfolders" xml:space="preserve">
+    <value>Include Subfolders</value>
   </data>
 </root>

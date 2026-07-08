@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -40,6 +41,13 @@ namespace GIBS.Module.DataRoom.Services
         public async Task DeleteSubscriptionAsync(int subscriptionId, int moduleId)
         {
             await DeleteAsync(CreateAuthorizationPolicyUrl($"{ApiUrl}/{subscriptionId}/{moduleId}", EntityNames.Module, moduleId));
+        }
+
+        public Task<bool> ConfirmSubscriptionEmailAsync(string token, int moduleId)
+        {
+            // This is called server-side only via the confirmation link
+            // The client just needs to provide the method signature
+            return Task.FromResult(false);
         }
     }
 }

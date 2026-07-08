@@ -2,6 +2,7 @@
 @using Oqtane.Models
 @using GIBS.Module.DataRoom.Services
 @using GIBS.Module.DataRoom.Models
+@using Microsoft.Extensions.Localization
 
 @namespace GIBS.Module.DataRoom
 @inherits ModuleBase
@@ -14,7 +15,7 @@
 @inject ISettingService SettingService
 @inject NavigationManager NavigationManager
 @inject HttpClient HttpClient
-@inject IStringLocalizer<Index> Localizer
+@inject IStringLocalizer<Edit> Localizer
 
 
 
@@ -52,13 +53,21 @@
                             <span class="text-muted small"><b>Current Folder:</b> @_currentFolderPath</span>
                            
                         </div>
-                    @if (_currentFolderId != _rootFolderId)
-                    {
-                            <button class="btn btn-sm btn-outline-secondary" @onclick="OpenParentFolder">
-                                <span class="oi oi-arrow-thick-left me-1"></span>Up One Level
-                            </button>
-                    }
-                    </div>
+                        <div>
+                                @if (_currentFolderId != _rootFolderId)
+                            {
+                                    <button class="btn btn-sm btn-outline-secondary me-3" @onclick="OpenParentFolder">
+                                        <span class="oi oi-arrow-thick-left me-1"></span>Up One Level
+                                    </button>
+                            }
+
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="OpenAddFolderDialog">
+                            <span class="oi oi-plus me-1"></span>Add Folder
+                        </button>
+                        </div>
+                </div>
+
+
             
 
                 @if (_browserItems != null && _browserItems.Any())
@@ -114,8 +123,16 @@
                                 <td></td>
                                 <td></td>
                                 <td class="text-end">
-                                    <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => OpenFolder(item.FolderId)">Open</button>
-                                    <span class="badge bg-light text-dark border">@GetFileCount(item.FolderId) files</span>
+                                <span class="badge bg-light text-dark border">@GetFileCount(item.FolderId) files</span>
+                                    @if (GetFileCount(item.FolderId) > 0)
+                                    {
+                                        <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => OpenFolder(item.FolderId)">Open</button>
+                                    }
+                                    else
+                                    {
+                                        <button class="btn btn-sm btn-outline-danger me-1" @onclick="() => DeleteFolderAsync(item.FolderId)">Delete</button>
+                                    }
+                                   
                                 </td>
                             }
                             else
@@ -162,6 +179,8 @@
                         <th>Notify Upload</th>
                         <th>Notify Overwrite</th>
                         <th>Active</th>
+                        <th>Folder</th>
+                        <th>Include Subfolders</th>
                         <th>Last Notified</th>
                     </Header>
                     <Row>
@@ -171,6 +190,8 @@
                         <td>@(context.NotifyOnUpload ? "Yes" : "No")</td>
                         <td>@(context.NotifyOnOverwrite ? "Yes" : "No")</td>
                         <td>@(context.IsActive ? "Yes" : "No")</td>
+                        <td>@(context.FolderId > 0 ? GetFolderName(context.FolderId) : "-")</td>
+                        <td>@(context.IncludeSubfolders ? "Yes" : "No")</td>
                         <td>@(context.LastNotifiedOn.HasValue ? UtcToLocal(context.LastNotifiedOn.Value)?.ToString("g") : "-")</td>
                     </Row>
                 </Pager>
@@ -357,6 +378,30 @@
     </div>
 }
 
+@if (_showAddFolderDialog)
+{
+    <div class="modal d-block" style="display: block; background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Folder</h5>
+                    <button type="button" class="btn-close" @onclick="() => _showAddFolderDialog = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group mb-3">
+                        <label for="folderNameInput">Folder Name:</label>
+                        <input type="text" class="form-control" id="folderNameInput" @bind="_newFolderName" maxlength="255" placeholder="Enter folder name" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="() => _showAddFolderDialog = false">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="AddFolderAsync">Create Folder</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     public override SecurityAccessLevel SecurityAccessLevel => SecurityAccessLevel.Edit;
     public override bool UseAdminContainer => false;
@@ -394,6 +439,11 @@
     private string _renameItemName = string.Empty;
     private string _renameFileExtension = string.Empty;
     private bool _renameIsFolder = false;
+
+    // Add folder dialog state
+    private bool _showAddFolderDialog = false;
+    private string _newFolderName = string.Empty;
+
     private string _activeTab = "Documents";
 
     // ZIP extraction state
@@ -712,6 +762,18 @@
             : userId;
     }
 
+    private string GetFolderName(int folderId)
+    {
+        if (folderId <= 0)
+        {
+            return "-";
+        }
+
+        return _folderLookup.TryGetValue(folderId, out var folder) && !string.IsNullOrWhiteSpace(folder?.Name)
+            ? folder.Name
+            : $"#{folderId}";
+    }
+
     private static string GetActionBadge(string action) => action switch
     {
         "Download" => "bg-primary",
@@ -757,6 +819,54 @@
         _renameFileExtension = string.Empty;
         _renameFileId = 0;
         _renameIsFolder = false;
+    }
+
+    private void OpenAddFolderDialog()
+    {
+        _newFolderName = string.Empty;
+        _showAddFolderDialog = true;
+    }
+
+    private async Task AddFolderAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_newFolderName))
+        {
+            AddModuleMessage(Localizer["FolderNameCannotBeEmpty"], MessageType.Warning);
+            return;
+        }
+
+        try
+        {
+            var response = await HttpClient.PostAsJsonAsync(
+                $"{NavigationManager.BaseUri}api/dataroom/CreateFolder?authmoduleid={ModuleState.ModuleId}",
+                new { FolderName = _newFolderName, ParentFolderId = _currentFolderId, DataRoomId = _dataRoom.DataRoomId, ModuleId = ModuleState.ModuleId });
+
+            if (response.IsSuccessStatusCode)
+            {
+                _showAddFolderDialog = false;
+                _newFolderName = string.Empty;
+
+                // Refresh current folder to display the new folder
+                // This updates _folders, _allowedFolderIds, and rebuilds the browser items
+                await RefreshCurrentFolderAsync();
+
+                AddModuleMessage("Folder created successfully.", MessageType.Success);
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                AddModuleMessage("You do not have permission to create a folder at this location.", MessageType.Error);
+                await logger.LogWarning(null, "Unauthorized attempt to create folder {FolderName}", _newFolderName);
+            }
+            else
+            {
+                AddModuleMessage("Error creating folder. Please try again.", MessageType.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error creating folder {FolderName}", _newFolderName);
+            AddModuleMessage($"Error creating folder: {ex.Message}", MessageType.Error);
+        }
     }
 
     private async Task RenameItemAsync()
@@ -828,6 +938,51 @@
 
         BuildBrowserItems();
 
+    }
+
+    private async Task DeleteFolderAsync(int folderId)
+    {
+        try
+        {
+            if (GetFileCount(folderId) > 0)
+            {
+                AddModuleMessage("Cannot delete folder with files. Please remove all files first.", MessageType.Warning);
+                return;
+            }
+
+            // Call secure server endpoint for folder deletion
+            var response = await HttpClient.PostAsJsonAsync(
+                $"{NavigationManager.BaseUri}api/dataroom/DeleteFolder?authmoduleid={ModuleState.ModuleId}",
+                new { FolderId = folderId, DataRoomId = _dataRoom.DataRoomId, ModuleId = ModuleState.ModuleId });
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Refresh folders list
+                _folders = await FolderService.GetFoldersAsync(ModuleState.SiteId);
+                _folderLookup = _folders.ToDictionary(f => f.FolderId, f => f);
+                BuildBrowserItems();
+
+                AddModuleMessage("Folder deleted successfully.", MessageType.Success);
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+            {
+                AddModuleMessage("Folder is not empty. Please remove all files before deleting.", MessageType.Warning);
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.Forbidden)
+            {
+                AddModuleMessage("You do not have permission to delete this folder.", MessageType.Error);
+                await logger.LogWarning(null, "Unauthorized attempt to delete folder {FolderId}", folderId);
+            }
+            else
+            {
+                AddModuleMessage("Error deleting folder. Please try again.", MessageType.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error deleting folder {FolderId}", folderId);
+            AddModuleMessage($"Error deleting folder: {ex.Message}", MessageType.Error);
+        }
     }
 
     private void OpenParentFolder()

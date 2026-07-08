@@ -15,5 +15,7 @@ namespace GIBS.Module.DataRoom.Services
         Task<Subscription> UpdateSubscriptionAsync(Subscription subscription, int moduleId);
 
         Task DeleteSubscriptionAsync(int subscriptionId, int moduleId);
+
+        Task<bool> ConfirmSubscriptionEmailAsync(string token, int moduleId);
     }
 }
