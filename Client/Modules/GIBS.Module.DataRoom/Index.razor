@@ -308,7 +308,18 @@ else
     private bool _includeSubfolders = true;
     private bool _currentFolderHasSubfolders;
     private string _anonymousSubscriptionEmail = string.Empty;
- 
+    // Local clock support (user's local timezone)
+    private string _localTime = string.Empty;
+    private int _timezoneOffsetMinutes = 0;
+    private System.Threading.Timer _clockTimer;
+
+    // Runtime culture diagnostics / temporary override
+    private string _effectiveUICulture = string.Empty;
+    private string _effectiveCulture = string.Empty;
+    private string _forceCulture = string.Empty;
+    private string _aliasCultureCode = string.Empty;
+    private string _browserCultureCode = string.Empty;
+
    // private CultureInfo _currentUICulture = CultureInfo.InvariantCulture;
 
     // DEBUG
@@ -321,7 +332,7 @@ else
     private bool _isViewRoleAuthorized = true;
     private string _sortColumn = "ModifiedOn";
     private bool _sortDescending = true;
-    private string _defaultLanguage = "en";
+    private string _defaultLanguage = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -329,8 +340,13 @@ else
         {
             var settings = await SettingService.GetModuleSettingsAsync(ModuleState.ModuleId);
             _ViewRole = SettingService.GetSetting(settings, "ViewRole", "");
-            _defaultLanguage = SettingService.GetSetting(settings, "DefaultLanguage", "en");
+            _defaultLanguage = SettingService.GetSetting(settings, "DefaultLanguage", string.Empty);
+            _forceCulture = SettingService.GetSetting(settings, "ForceCultureForTesting", "");
 
+            // Do not override culture here; use Oqtane language selector/pipeline.
+            _aliasCultureCode = PageState?.Site?.CultureCode ?? string.Empty;
+            _effectiveUICulture = CultureInfo.CurrentUICulture.Name;
+            _effectiveCulture = CultureInfo.CurrentCulture.Name;
 
             // Set default language from site's default language
       //      _currentLanguage = PageState?.Site?.Languages?.FirstOrDefault(l => l.IsDefault)?.Code ?? _defaultLanguage;
@@ -353,6 +369,8 @@ else
             {
                 _numberPerPage = 10;
             }
+
+
 
             _isViewRoleAuthorized = IsUserAuthorizedForViewRole(_ViewRole);
             if (!_isViewRoleAuthorized)
@@ -932,5 +950,130 @@ else
     /// This is needed because IStringLocalizer caches based on the culture at component initialization,
     /// but we're setting the culture in OnAfterRenderAsync (after render).
     /// </summary>
-   
+
+    public void Dispose()
+    {
+        _clockTimer?.Dispose();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _effectiveUICulture = CultureInfo.CurrentUICulture.Name;
+            _effectiveCulture = CultureInfo.CurrentCulture.Name;
+            _aliasCultureCode = PageState?.Site?.CultureCode ?? string.Empty;
+
+            try
+            {
+                // getTimezoneOffset returns minutes to add to local time to get UTC, so local = UTC - offset
+                _timezoneOffsetMinutes = await JSRuntime.InvokeAsync<int>("eval", "new Date().getTimezoneOffset()");
+            }
+            catch
+            {
+                _timezoneOffsetMinutes = 0;
+            }
+
+            UpdateLocalTime();
+            _clockTimer = new System.Threading.Timer(_ =>
+            {
+                InvokeAsync(() =>
+                {
+                    UpdateLocalTime();
+                    StateHasChanged();
+                });
+            }, null, 1000, 1000);
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private async Task TryApplyCultureFromCookieAsync()
+    {
+        try
+        {
+            var browserCulture = await JSRuntime.InvokeAsync<string>("eval", "(navigator.languages && navigator.languages.length ? navigator.languages[0] : navigator.language) || ''");
+            _browserCultureCode = browserCulture ?? string.Empty;
+
+            var cookieString = await JSRuntime.InvokeAsync<string>("eval", "document.cookie");
+
+            string contentCultureCode = null;
+            string uiCultureCode = null;
+
+            if (!string.IsNullOrWhiteSpace(cookieString))
+            {
+                var cultureCookie = cookieString
+                    .Split(';', StringSplitOptions.RemoveEmptyEntries)
+                    .Select(x => x.Trim())
+                    .FirstOrDefault(x => x.StartsWith(".AspNetCore.Culture=", StringComparison.OrdinalIgnoreCase));
+
+                if (!string.IsNullOrWhiteSpace(cultureCookie))
+                {
+                    var encodedValue = cultureCookie.Substring(cultureCookie.IndexOf('=') + 1);
+                    var value = Uri.UnescapeDataString(encodedValue);
+
+                    foreach (var part in value.Split('|', StringSplitOptions.RemoveEmptyEntries))
+                    {
+                        var token = part.Trim();
+                        if (token.StartsWith("c=", StringComparison.OrdinalIgnoreCase))
+                        {
+                            contentCultureCode = token.Substring(2).Trim();
+                        }
+                        else if (token.StartsWith("uic=", StringComparison.OrdinalIgnoreCase))
+                        {
+                            uiCultureCode = token.Substring(4).Trim();
+                        }
+                    }
+                }
+            }
+
+            var effectiveCode = _forceCulture ?? PageState?.Site?.CultureCode ?? PageState?.User?.CultureCode ?? contentCultureCode ?? uiCultureCode ?? browserCulture ?? _defaultLanguage;
+            if (string.IsNullOrWhiteSpace(effectiveCode))
+            {
+                return;
+            }
+
+            if (!effectiveCode.Contains("-"))
+            {
+                if (effectiveCode.Equals("it", StringComparison.OrdinalIgnoreCase))
+                {
+                    effectiveCode = "it-IT";
+                }
+                else
+                {
+                    var specificCulture = CultureInfo.GetCultures(CultureTypes.SpecificCultures)
+                        .FirstOrDefault(c => c.TwoLetterISOLanguageName.Equals(effectiveCode, StringComparison.OrdinalIgnoreCase));
+                    if (specificCulture != null)
+                    {
+                        effectiveCode = specificCulture.Name;
+                    }
+                }
+            }
+
+            _aliasCultureCode = effectiveCode;
+            var culture = CultureInfo.GetCultureInfo(effectiveCode);
+            if (!string.Equals(CultureInfo.CurrentUICulture.Name, culture.Name, StringComparison.OrdinalIgnoreCase))
+            {
+                CultureInfo.DefaultThreadCurrentCulture = culture;
+                CultureInfo.DefaultThreadCurrentUICulture = culture;
+                CultureInfo.CurrentCulture = culture;
+                CultureInfo.CurrentUICulture = culture;
+            }
+
+            _effectiveUICulture = CultureInfo.CurrentUICulture.Name;
+            _effectiveCulture = CultureInfo.CurrentCulture.Name;
+            StateHasChanged();
+        }
+        catch
+        {
+            // ignore culture resolution errors
+        }
+    }
+
+    private void UpdateLocalTime()
+    {
+        var local = DateTime.UtcNow - TimeSpan.FromMinutes(_timezoneOffsetMinutes);
+        _localTime = local.ToString("F", CultureInfo.CurrentCulture);
+    }
+
 }

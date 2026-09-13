@@ -190,7 +190,7 @@
     <value>Action</value>
   </data>
   <data name="Download" xml:space="preserve">
-    <value>Download</value>
+    <value>Download-Z</value>
   </data>
   <data name="View" xml:space="preserve">
     <value>View</value>
@@ -227,5 +227,8 @@
   </data>
   <data name="IncludeSubfolders" xml:space="preserve">
     <value>Include Subfolders</value>
+  </data>
+  <data name="LocalTime" xml:space="preserve">
+    <value>Local Time</value>
   </data>
 </root>

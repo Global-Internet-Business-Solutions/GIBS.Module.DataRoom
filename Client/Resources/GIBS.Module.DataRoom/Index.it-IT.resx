@@ -228,4 +228,7 @@
   <data name="IncludeSubfolders" xml:space="preserve">
     <value>Includi sottocartelle</value>
   </data>
+  <data name="LocalTime" xml:space="preserve">
+    <value>Ora locale</value>
+  </data>
 </root>

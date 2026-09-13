@@ -12,7 +12,7 @@ namespace GIBS.Module.DataRoom.Startup
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
             // not implemented
-        //    app.UseRequestLocalization();
+            //app.UseRequestLocalization();
         }
 
         public void ConfigureMvc(IMvcBuilder mvcBuilder)
