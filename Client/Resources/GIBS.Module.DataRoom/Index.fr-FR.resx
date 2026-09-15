@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="Add.Text" xml:space="preserve"><value>Ajouter un DataRoom</value></data>
+  <data name="Edit.Text" xml:space="preserve"><value>Modifier</value></data>
+  <data name="Delete.Text" xml:space="preserve"><value>Supprimer</value></data>
+  <data name="Delete.Header" xml:space="preserve"><value>Supprimer le DataRoom</value></data>
+  <data name="Delete.Message" xml:space="preserve"><value>Voulez-vous vraiment supprimer ce DataRoom ?</value></data>
+  <data name="Message.DisplayNone" xml:space="preserve"><value>Aucun DataRoom à afficher</value></data>
+  <data name="Message.LoadError" xml:space="preserve"><value>Erreur lors du chargement du DataRoom</value></data>
+  <data name="Message.DeleteError" xml:space="preserve"><value>Erreur lors de la suppression du DataRoom</value></data>
+  <data name="EnableZipExtraction" xml:space="preserve"><value>Activer l'extraction ZIP</value></data>
+  <data name="Files" xml:space="preserve"><value>fichiers</value></data>
+  <data name="DownloadAllZip" xml:space="preserve"><value>Télécharger tout (ZIP)</value></data>
+  <data name="Name" xml:space="preserve"><value>Nom</value></data>
+  <data name="NoAccessMessage" xml:space="preserve"><value>Vous n'avez peut-être pas l'autorisation d'accéder à ce DataRoom. Veuillez contacter l'administrateur du site.</value></data>
+  <data name="NotAuthorizedMessage" xml:space="preserve"><value>Vous n'êtes pas autorisé à afficher ce DataRoom. Êtes-vous connecté ?</value></data>
+  <data name="Modified" xml:space="preserve"><value>Modifié</value></data>
+  <data name="Open" xml:space="preserve"><value>Ouvrir</value></data>
+  <data name="Manage" xml:space="preserve"><value>Gérer</value></data>
+  <data name="Type" xml:space="preserve"><value>Type</value></data>
+  <data name="Size" xml:space="preserve"><value>Taille</value></data>
+  <data name="InactiveMessage" xml:space="preserve"><value>Ce DataRoom est actuellement inactif.</value></data>
+  <data name="CurrentFolder" xml:space="preserve"><value>Dossier actuel :</value></data>
+  <data name="Items" xml:space="preserve"><value>Éléments :</value></data>
+  <data name="UpOneLevel" xml:space="preserve"><value>Remonter d'un niveau</value></data>
+  <data name="Action" xml:space="preserve"><value>Action</value></data>
+  <data name="Download" xml:space="preserve"><value>Télécharger</value></data>
+  <data name="View" xml:space="preserve"><value>Voir</value></data>
+  <data name="AccessRestricted" xml:space="preserve"><value>Accès restreint</value></data>
+  <data name="NoDocumentsAvailable" xml:space="preserve"><value>Aucun document n'est disponible dans ce dossier.</value></data>
+  <data name="EmailForNotifications" xml:space="preserve"><value>E-mail pour les notifications</value></data>
+  <data name="Folder" xml:space="preserve"><value>Dossier</value></data>
+  <data name="Subscribe" xml:space="preserve"><value>S'abonner</value></data>
+  <data name="Subscribed" xml:space="preserve"><value>Abonné</value></data>
+  <data name="Configure" xml:space="preserve"><value>Configurer</value></data>
+  <data name="UnsubscribeFromNotifications" xml:space="preserve"><value>Se désabonner des notifications</value></data>
+  <data name="SubscribeToNotifications" xml:space="preserve"><value>S'abonner aux notifications</value></data>
+  <data name="SubscribeFolderNotifications" xml:space="preserve"><value>S'abonner aux notifications du dossier</value></data>
+  <data name="IncludeSubfolders" xml:space="preserve"><value>Inclure les sous-dossiers</value></data>
+  <data name="LocalTime" xml:space="preserve"><value>Heure locale</value></data>
+  <data name="AddFolder" xml:space="preserve"><value>Ajouter un dossier</value></data>
+  <data name="IncludeSubfoldersHelp" xml:space="preserve"><value>S'abonner à ce dossier et à ses sous-dossiers</value></data>
+  <data name="NotifyOnUploadDescription" xml:space="preserve"><value>Vous serez averti lorsqu'un nouveau fichier est téléversé.</value></data>
+  <data name="Documents" xml:space="preserve"><value>Documents</value></data>
+  <data name="Subscriptions" xml:space="preserve"><value>Abonnements</value></data>
+  <data name="RoomSettings" xml:space="preserve"><value>Paramètres du DataRoom</value></data>
+  <data name="RenameItem" xml:space="preserve"><value>Renommer l'élément</value></data>
+  <data name="NewName" xml:space="preserve"><value>Nouveau nom</value></data>
+  <data name="Extension" xml:space="preserve"><value>Extension</value></data>
+  <data name="CannotBeChanged" xml:space="preserve"><value>Ne peut pas être modifié</value></data>
+  <data name="Cancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="Rename" xml:space="preserve"><value>Renommer</value></data>
+  <data name="FolderName" xml:space="preserve"><value>Nom du dossier</value></data>
+  <data name="EnterFolderName" xml:space="preserve"><value>Saisissez le nom du dossier</value></data>
+  <data name="CreateFolder" xml:space="preserve"><value>Créer le dossier</value></data>
+  <data name="SubscriptionsActivityLog" xml:space="preserve"><value>Journal d'activité</value></data>
+  <data name="Email" xml:space="preserve"><value>E-mail</value></data>
+  <data name="UserID" xml:space="preserve"><value>ID utilisateur</value></data>
+  <data name="Confirmed" xml:space="preserve"><value>Confirmé</value></data>
+  <data name="NotifyUpload" xml:space="preserve"><value>Notifier l'envoi</value></data>
+  <data name="NotifyOverwrite" xml:space="preserve"><value>Notifier le remplacement</value></data>
+  <data name="Active" xml:space="preserve"><value>Actif</value></data>
+  <data name="LastNotified" xml:space="preserve"><value>Dernière notification</value></data>
+  <data name="SubscriptionEvents" xml:space="preserve"><value>File d'abonnement</value></data>
+</root>
