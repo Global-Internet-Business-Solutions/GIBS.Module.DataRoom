@@ -86,6 +86,13 @@ From Visual Studio:
 > `<packageType name="Oqtane.Framework" version="10.1.2" />`  
 > Set this to the lowest Oqtane version that is verified in testing.
 
+## Localization
+
+- Localization resource files are stored in `Client/Resources/GIBS.Module.DataRoom/`.
+- Supported cultures are packaged from the `Package` project during release/debug builds.
+- If you add or rename cultures, update `Package/debug.cmd`, `Package/release.cmd`, and `Package/GIBS.Module.DataRoom.nuspec` so the corresponding satellite assemblies are included in the `.nupkg`.
+- Production localization depends on rebuilding and redeploying the package after resource changes.
+
 ## API Endpoints (Server)
 
 Base route follows Oqtane module controller conventions.
