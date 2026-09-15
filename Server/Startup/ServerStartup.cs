@@ -25,6 +25,7 @@ namespace GIBS.Module.DataRoom.Startup
             services.AddTransient<IDataRoomService, ServerDataRoomService>();
             services.AddTransient<IDataRoomActivityLogService, ServerDataRoomActivityLogService>();
             services.AddTransient<IDataRoomSubscriptionService, ServerDataRoomSubscriptionService>();
+            services.AddTransient<IDataRoomSubscriptionEventService, ServerDataRoomSubscriptionEventService>();
             services.AddDbContextFactory<DataRoomContext>(opt => { }, ServiceLifetime.Transient);
 
             services.AddLocalization(options => options.ResourcesPath = "Resources");

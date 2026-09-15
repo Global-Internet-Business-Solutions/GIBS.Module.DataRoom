@@ -9,18 +9,19 @@
 @inject IDataRoomService DataRoomService
 @inject IDataRoomActivityLogService ActivityLogService
 @inject IDataRoomSubscriptionService SubscriptionService
+@inject IDataRoomSubscriptionEventService SubscriptionEventService
 @inject IFolderService FolderService
 @inject IFileService FileService
 @inject IUserService UserService
 @inject ISettingService SettingService
 @inject NavigationManager NavigationManager
 @inject HttpClient HttpClient
-@inject IStringLocalizer<Edit> Localizer
+@inject IStringLocalizer<Index> Localizer
 
 
 
 <TabStrip ActiveTab="@_activeTab">
-       <TabPanel Name="Documents" Heading="Documents" ResourceKey="Documents">
+    <TabPanel Name="Documents" Heading="@Localizer["Documents"]" ResourceKey="Documents">
 
            
             @if (_dataRoom != null && _dataRoom.FolderId > 0)
@@ -40,7 +41,7 @@
                         </label>
                     </div>
                     <button class="btn btn-outline-secondary btn-sm" @onclick="DownloadZipAsync">
-                        <span class="oi oi-data-transfer-download me-1"></span>Download All (ZIP)
+                        <span class="oi oi-data-transfer-download me-1"></span>@Localizer["DownloadAllZip"]
                     </button>
                 </div>
 
@@ -50,19 +51,19 @@
                 
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <div>
-                            <span class="text-muted small"><b>Current Folder:</b> @_currentFolderPath</span>
+                            <span class="text-muted small"><b>@Localizer["CurrentFolder"]:</b> @_currentFolderPath</span>
                            
                         </div>
                         <div>
                                 @if (_currentFolderId != _rootFolderId)
                             {
                                     <button class="btn btn-sm btn-outline-secondary me-3" @onclick="OpenParentFolder">
-                                        <span class="oi oi-arrow-thick-left me-1"></span>Up One Level
+                            <span class="oi oi-arrow-thick-left me-1"></span>@Localizer["UpOneLevel"]
                                     </button>
                             }
 
                         <button class="btn btn-sm btn-outline-secondary" @onclick="OpenAddFolderDialog">
-                            <span class="oi oi-plus me-1"></span>Add Folder
+                            <span class="oi oi-plus me-1"></span>@Localizer["AddFolder"]
                         </button>
                         </div>
                 </div>
@@ -80,34 +81,34 @@
                            Class="table table-striped table-hover table-sm align-middle mb-0">
                         <Header>
                             <th style="cursor: pointer;" @onclick="@(() => OnSortColumnChanged("Name"))">
-                                Name
+                            @Localizer["Name"]
                                 @if (_sortColumn == "Name")
                                 {
                                     <span class="oi oi-sort-@(_sortDescending ? "descending" : "ascending")" style="margin-left: 5px;"></span>
                                 }
                             </th>
                             <th style="cursor: pointer;" @onclick="@(() => OnSortColumnChanged("Type"))">
-                                Type
+                                @Localizer["Type"]
                                 @if (_sortColumn == "Type")
                                 {
                                     <span class="oi oi-sort-@(_sortDescending ? "descending" : "ascending")" style="margin-left: 5px;"></span>
                                 }
                             </th>
                             <th style="cursor: pointer;" @onclick="@(() => OnSortColumnChanged("Size"))">
-                                Size
+                                @Localizer["Size"]
                                 @if (_sortColumn == "Size")
                                 {
                                     <span class="oi oi-sort-@(_sortDescending ? "descending" : "ascending")" style="margin-left: 5px;"></span>
                                 }
                             </th>
                             <th style="cursor: pointer;" @onclick="@(() => OnSortColumnChanged("ModifiedOn"))">
-                                Modified
+                                @Localizer["Modified"]
                                 @if (_sortColumn == "ModifiedOn")
                                 {
                                     <span class="oi oi-sort-@(_sortDescending ? "descending" : "ascending")" style="margin-left: 5px;"></span>
                                 }
                             </th>
-                            <th class="text-end">Action</th>
+                            <th class="text-end">@Localizer["Action"]</th>
                         </Header>
 
                         <Row Context="item">
@@ -119,18 +120,18 @@
                                         <span class="oi oi-folder me-1"></span>@item.Name
                                     </button>
                                 </td>
-                                <td><span class="badge bg-light text-dark border">Folder</span></td>
+                                <td><span class="badge bg-light text-dark border">@Localizer["Folder"]</span></td>
                                 <td></td>
                                 <td></td>
                                 <td class="text-end">
-                                <span class="badge bg-light text-dark border">@GetFileCount(item.FolderId) files</span>
+                                <span class="badge bg-light text-dark border">@GetFileCount(item.FolderId) @Localizer["files"]</span>
                                     @if (GetFileCount(item.FolderId) > 0)
                                     {
-                                        <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => OpenFolder(item.FolderId)">Open</button>
+                                        <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => OpenFolder(item.FolderId)">@Localizer["Open"]</button>
                                     }
                                     else
                                     {
-                                        <button class="btn btn-sm btn-outline-danger me-1" @onclick="() => DeleteFolderAsync(item.FolderId)">Delete</button>
+                                        <button class="btn btn-sm btn-outline-danger me-1" @onclick="() => DeleteFolderAsync(item.FolderId)">@Localizer["Delete"]</button>
                                     }
                                    
                                 </td>
@@ -142,7 +143,7 @@
                                 @item.Name</td>
                                 <td><span class="badge bg-light text-dark border">@item.Extension?.TrimStart('.').ToUpper()</span></td>
                                 <td class="text-nowrap">@FormatSize(item.Size)</td>
-                                <td class="text-nowrap">@UtcToLocal(item.ModifiedOn)?.ToString("g")</td>
+                                <td class="text-nowrap">@UtcToLocal(item.ModifiedOn)?.ToString("MM/dd/yyyy")</td>
                                 <td class="text-end">
                             <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteFile(item.FileId)"><i class="oi oi-trash"></i></button>
                                 </td>
@@ -164,7 +165,45 @@
             }
         </TabPanel>
 
-        <TabPanel Name="Subscriptions" Heading="Subscriptions" ResourceKey="Subscriptions">
+
+    <TabPanel Name="ActivityLog" Heading="@Localizer["SubscriptionsActivityLog"]" ResourceKey="ActivityLog">
+        @if (_activityLogs != null && _activityLogs.Any())
+        {
+            <Pager Items="@_activityLogs" SearchProperties="UserId">
+                <Header>
+                    <th>Action</th>
+                    <th>User ID</th>
+                    <th>DisplayName</th>
+                    <th>File</th>
+                    <th>Timestamp</th>
+                    <th>IP Address</th>
+                </Header>
+                <Row>
+                    <td><span class="badge @GetActionBadge(context.Action)">@context.Action</span></td>
+                    <td>@(string.IsNullOrEmpty(context.UserId) ? "-" : context.UserId)</td>
+                    <td>@GetUserDisplay(context.UserId)</td>
+                    <td>@GetFileName(context.FileId)</td>
+                    <td>@UtcToLocal(context.Timestamp)?.ToString("g")</td>
+                    <td>
+                        @if (string.IsNullOrEmpty(context.IPAddress))
+                        {
+                            <span>-</span>
+                        }
+                        else
+                        {
+                            <a href="https://ip-address-lookup-v4.com/ip/@context.IPAddress" target="_blank">@context.IPAddress</a>
+                        }
+                    </td>
+                </Row>
+            </Pager>
+        }
+        else
+        {
+            <div class="text-center text-muted py-3">No activity recorded yet.</div>
+        }
+    </TabPanel>
+
+    <TabPanel Name="Subscriptions" Heading="@Localizer["Subscriptions"]" ResourceKey="Subscriptions">
             @if (_dataRoom == null)
             {
                 <div class="text-center text-muted py-3">Save the room first to manage subscriptions.</div>
@@ -173,15 +212,15 @@
             {
                 <Pager Items="@_subscriptions" SearchProperties="Email">
                     <Header>
-                        <th>Email</th>
-                        <th>User ID</th>
-                        <th>Confirmed</th>
-                        <th>Notify Upload</th>
-                        <th>Notify Overwrite</th>
-                        <th>Active</th>
-                        <th>Folder</th>
-                        <th>Include Subfolders</th>
-                        <th>Last Notified</th>
+                        <th>@Localizer["Email"]</th>
+                        <th>@Localizer["UserID"]</th>
+                        <th>@Localizer["Confirmed"]</th>
+                        <th>@Localizer["NotifyUpload"]</th>
+                        <th>@Localizer["NotifyOverwrite"]</th>
+                        <th>@Localizer["Active"]</th>
+                        <th>@Localizer["Folder"]</th>
+                        <th>@Localizer["IncludeSubfolders"]</th>
+                        <th>@Localizer["LastNotified"]</th>
                     </Header>
                     <Row>
                         <td>@(string.IsNullOrWhiteSpace(context.Email) ? "-" : context.Email)</td>
@@ -202,45 +241,84 @@
             }
         </TabPanel>
 
-        <TabPanel Name="ActivityLog" Heading="Activity Log" ResourceKey="ActivityLog">
-            @if (_activityLogs != null && _activityLogs.Any())
+
+
+    <TabPanel Name="SubscriptionEvents" Heading="@Localizer["SubscriptionEvents"]" ResourceKey="SubscriptionEvents">
+            @if (_dataRoom == null)
             {
-                <Pager Items="@_activityLogs" SearchProperties="UserId">
-                    <Header>
-                        <th>Action</th>
-                        <th>User ID</th>
-                        <th>DisplayName</th>
-                        <th>File</th>
-                        <th>Timestamp</th>
-                        <th>IP Address</th>
-                    </Header>
-                    <Row>
-                        <td><span class="badge @GetActionBadge(context.Action)">@context.Action</span></td>
-                        <td>@(string.IsNullOrEmpty(context.UserId) ? "-" : context.UserId)</td>
-                        <td>@GetUserDisplay(context.UserId)</td>
-                        <td>@GetFileName(context.FileId)</td>
-                        <td>@UtcToLocal(context.Timestamp)?.ToString("g")</td>
-                        <td>
-                            @if (string.IsNullOrEmpty(context.IPAddress))
-                            {
-                                <span>-</span>
-                            }
-                            else
-                            {
-                                <a href="https://ip-address-lookup-v4.com/ip/@context.IPAddress" target="_blank">@context.IPAddress</a>
-                            }
-                        </td>
-                    </Row>
-                </Pager>
+                <div class="text-center text-muted py-3">Save the room first to view subscription event diagnostics.</div>
             }
             else
             {
-                <div class="text-center text-muted py-3">No activity recorded yet.</div>
+                <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+                    <div class="text-muted small">
+                        Pending: @(_subscriptionEvents?.Count(item => !item.IsProcessed) ?? 0) | Processed: @(_subscriptionEvents?.Count(item => item.IsProcessed) ?? 0)
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="RefreshSubscriptionDiagnosticsAsync" disabled="@_processingSubscriptionEvents">Refresh</button>
+                        <button type="button" class="btn btn-primary btn-sm" @onclick="ProcessSubscriptionEventsAsync" disabled="@_processingSubscriptionEvents">@(_processingSubscriptionEvents ? "Processing..." : "Process Queue")</button>
+                    </div>
+                </div>
+
+                @if (_lastSubscriptionEventProcessResult != null)
+                {
+                    <div class="alert alert-info py-2 px-3 small">
+                        <div><strong>Last Process Result:</strong> @_lastSubscriptionEventProcessResult.Message</div>
+                        <div class="mt-1">
+                            Pending Seen: @_lastSubscriptionEventProcessResult.PendingEventCount |
+                            Processed: @_lastSubscriptionEventProcessResult.ProcessedEventCount |
+                            Notifications: @_lastSubscriptionEventProcessResult.NotificationCount |
+                            Subscribers: @_lastSubscriptionEventProcessResult.SubscriberCount |
+                            Ran: @UtcToLocal(_lastSubscriptionEventProcessResult.ProcessedOn)?.ToString("g")
+                        </div>
+                    </div>
+                }
+
+                @if (_subscriptionEvents != null && _subscriptionEvents.Any())
+                {
+                    <Pager Items="@_subscriptionEvents" SearchProperties="FileName">
+                        <Header>
+                            <th>@Localizer["Action"]</th>
+                            <th>@Localizer["File"]</th>
+                            <th>@Localizer["Folder"]</th>
+                            <th>@Localizer["Download"]</th>
+                            <th>@Localizer["UserID"]</th>
+                            <th>@Localizer["DisplayName"]</th>
+                            <th>@Localizer["OccurredOn"]</th>
+                            <th>@Localizer["Processed"]</th>
+                            <th>@Localizer["ProcessedOn"]</th>
+                        </Header>
+                        <Row>
+                            <td><span class="badge @GetActionBadge(context.Action)">@context.Action</span></td>
+                            <td>@(string.IsNullOrWhiteSpace(context.FileName) ? GetFileName(context.FileId) : context.FileName)</td>
+                            <td>@(context.FolderId > 0 ? GetFolderName(context.FolderId) : "-")</td>
+                            <td>
+                                @if (context.FileId > 0)
+                                {
+                                    <a class="badge bg-primary text-decoration-none" href="@FileUrl(context.FileId, true)" target="_blank" rel="noopener noreferrer">@Localizer["Download"]</a>
+                                }
+                                else
+                                {
+                                    <span>-</span>
+                                }
+                            </td>
+                            <td>@(string.IsNullOrWhiteSpace(context.CreatedByUserId) ? "-" : context.CreatedByUserId)</td>
+                            <td>@GetUserDisplay(context.CreatedByUserId)</td>
+                            <td>@UtcToLocal(context.OccurredOn)?.ToString("g")</td>
+                            <td>@(context.IsProcessed ? "Yes" : "No")</td>
+                            <td>@(context.ProcessedOn.HasValue ? UtcToLocal(context.ProcessedOn.Value)?.ToString("g") : "-")</td>
+                        </Row>
+                    </Pager>
+                }
+                else
+                {
+                    <div class="text-center text-muted py-3">No subscription events recorded yet.</div>
+                }
             }
         </TabPanel>
-    
 
-    <TabPanel Name="Settings" Heading="Room Settings" ResourceKey="Settings">
+
+    <TabPanel Name="Settings" Heading="@Localizer["RoomSettings"]" ResourceKey="Settings">
         @if (_folders != null)
         {
             <div class="container-fluid px-0">
@@ -356,22 +434,22 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Rename Item</h5>
+                    <h5 class="modal-title">@Localizer["RenameItem"]</h5>
                     <button type="button" class="btn-close" @onclick="() => _showRenameFileDialog = false"></button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group mb-3">
-                        <label for="renameInput">New Name:</label>
+                        <label for="renameInput">@Localizer["NewName"]:</label>
                         <input type="text" class="form-control" id="renameInput" @bind="_renameItemName" maxlength="255" />
                         @if (!string.IsNullOrEmpty(_renameFileExtension))
                         {
-                            <div class="text-muted small mt-2">Extension: <strong>@_renameFileExtension</strong> (cannot be changed)</div>
+                            <div class="text-muted small mt-2">@Localizer["Extension"]: <strong>@_renameFileExtension</strong> (@Localizer["CannotBeChanged"])</div>
                         }
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @onclick="() => _showRenameFileDialog = false">Cancel</button>
-                    <button type="button" class="btn btn-primary" @onclick="RenameItemAsync">Rename</button>
+                    <button type="button" class="btn btn-secondary" @onclick="() => _showRenameFileDialog = false">@Localizer["Cancel"]</button>
+                    <button type="button" class="btn btn-primary" @onclick="RenameItemAsync">@Localizer["Rename"]</button>
                 </div>
             </div>
         </div>
@@ -384,18 +462,18 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Add Folder</h5>
+                    <h5 class="modal-title">@Localizer["AddFolder"]</h5>
                     <button type="button" class="btn-close" @onclick="() => _showAddFolderDialog = false"></button>
                 </div>
                 <div class="modal-body">
                     <div class="form-group mb-3">
-                        <label for="folderNameInput">Folder Name:</label>
-                        <input type="text" class="form-control" id="folderNameInput" @bind="_newFolderName" maxlength="255" placeholder="Enter folder name" />
+                        <label for="folderNameInput">@Localizer["FolderName"]:</label>
+                        <input type="text" class="form-control" id="folderNameInput" @bind="_newFolderName" maxlength="255" placeholder="@Localizer["EnterFolderName"]" />
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" @onclick="() => _showAddFolderDialog = false">Cancel</button>
-                    <button type="button" class="btn btn-primary" @onclick="AddFolderAsync">Create Folder</button>
+                    <button type="button" class="btn btn-secondary" @onclick="() => _showAddFolderDialog = false">@Localizer["Cancel"]</button>
+                    <button type="button" class="btn btn-primary" @onclick="AddFolderAsync">@Localizer["CreateFolder"]</button>
                 </div>
             </div>
         </div>
@@ -419,6 +497,7 @@
     private List<Folder> _folders;
     private List<Subscription> _subscriptions;
     private List<DataRoomActivityLog> _activityLogs;
+    private List<SubscriptionEvent> _subscriptionEvents;
     private Dictionary<int, string> _fileNames = new();
     private Dictionary<string, string> _userDisplayNames = new(StringComparer.OrdinalIgnoreCase);
 
@@ -432,6 +511,8 @@
     private bool _enableDownload = true;
     private bool _enableViewOnly = true;
     private bool _enableWatermark = false;
+    private bool _processingSubscriptionEvents = false;
+    private SubscriptionEventProcessResult _lastSubscriptionEventProcessResult;
 
     // File rename dialog state
     private bool _showRenameFileDialog = false;
@@ -500,8 +581,7 @@
                 _enableDownload = _dataRoom.EnableDownload;
                 _enableViewOnly = _dataRoom.EnableViewOnly;
                 _enableWatermark = _dataRoom.EnableWatermark;
-                _subscriptions = await SubscriptionService.GetSubscriptionsAsync(_dataRoom.DataRoomId, ModuleState.ModuleId);
-                _activityLogs = await ActivityLogService.GetActivityLogsAsync(_dataRoom.DataRoomId, ModuleState.ModuleId);
+                await LoadSubscriptionDiagnosticsAsync();
                 await LoadFileNamesAsync();
                 await LoadUserDisplayNamesAsync();
 
@@ -701,20 +781,87 @@
         }
     }
 
+    private async Task LoadSubscriptionDiagnosticsAsync()
+    {
+        if (_dataRoom == null)
+        {
+            _subscriptions = new List<Subscription>();
+            _activityLogs = new List<DataRoomActivityLog>();
+            _subscriptionEvents = new List<SubscriptionEvent>();
+            return;
+        }
+
+        _subscriptions = await SubscriptionService.GetSubscriptionsAsync(_dataRoom.DataRoomId, ModuleState.ModuleId) ?? new List<Subscription>();
+        _activityLogs = await ActivityLogService.GetActivityLogsAsync(_dataRoom.DataRoomId, ModuleState.ModuleId) ?? new List<DataRoomActivityLog>();
+        _subscriptionEvents = await SubscriptionEventService.GetSubscriptionEventsAsync(_dataRoom.DataRoomId, ModuleState.ModuleId) ?? new List<SubscriptionEvent>();
+    }
+
+    private async Task RefreshSubscriptionDiagnosticsAsync()
+    {
+        try
+        {
+            await LoadSubscriptionDiagnosticsAsync();
+            await LoadUserDisplayNamesAsync();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error refreshing subscription diagnostics {DataRoomId}", _dataRoom?.DataRoomId ?? 0);
+            AddModuleMessage("Error refreshing subscription diagnostics.", MessageType.Error);
+        }
+    }
+
+    private async Task ProcessSubscriptionEventsAsync()
+    {
+        if (_dataRoom == null)
+        {
+            AddModuleMessage("Save the room first to process the subscription queue.", MessageType.Warning);
+            return;
+        }
+
+        try
+        {
+            _processingSubscriptionEvents = true;
+            var result = await SubscriptionEventService.ProcessSubscriptionEventsAsync(_dataRoom.DataRoomId, ModuleState.ModuleId);
+            _lastSubscriptionEventProcessResult = result;
+            await LoadSubscriptionDiagnosticsAsync();
+            await LoadUserDisplayNamesAsync();
+
+            if (result != null)
+            {
+                AddModuleMessage(result.Message, MessageType.Success);
+            }
+            else
+            {
+                AddModuleMessage("Unable to process the subscription queue.", MessageType.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            await logger.LogError(ex, "Error processing subscription events {DataRoomId}", _dataRoom.DataRoomId);
+            AddModuleMessage("Error processing subscription events.", MessageType.Error);
+        }
+        finally
+        {
+            _processingSubscriptionEvents = false;
+        }
+    }
+
     private async Task LoadUserDisplayNamesAsync()
     {
         _userDisplayNames.Clear();
 
-        if (_activityLogs == null || !_activityLogs.Any())
-        {
-            return;
-        }
-
-        var userIds = _activityLogs
-            .Select(l => l.UserId)
+        var userIds = Enumerable.Empty<string>()
+            .Concat(_activityLogs?.Select(l => l.UserId) ?? Enumerable.Empty<string>())
+            .Concat(_subscriptionEvents?.Select(e => e.CreatedByUserId) ?? Enumerable.Empty<string>())
             .Where(id => !string.IsNullOrWhiteSpace(id))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+
+        if (!userIds.Any())
+        {
+            return;
+        }
 
         foreach (var userId in userIds)
         {

@@ -84,7 +84,7 @@ namespace GIBS.Module.DataRoom.Controllers
         }
 
         [HttpDelete("{id}/{moduleid}")]
-        [Authorize(Policy = PolicyNames.EditModule)]
+        [Authorize(Policy = PolicyNames.ViewModule)]
         public async Task Delete(int id, int moduleid)
         {
             if (IsAuthorizedEntityId(EntityNames.Module, moduleid))

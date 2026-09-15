@@ -93,7 +93,7 @@ namespace GIBS.Module.DataRoom.Services
             if (existing != null)
             {
                 existing.Email = string.IsNullOrWhiteSpace(normalizedEmail) ? existing.Email : normalizedEmail;
-                existing.EmailConfirmed = subscription.EmailConfirmed;
+                existing.EmailConfirmed = subscription.UserId.HasValue || subscription.EmailConfirmed;
                 existing.NotifyOnUpload = subscription.NotifyOnUpload;
                 existing.NotifyOnOverwrite = subscription.NotifyOnOverwrite;
                 existing.IsActive = true;
@@ -163,7 +163,7 @@ namespace GIBS.Module.DataRoom.Services
         public Task DeleteSubscriptionAsync(int subscriptionId, int moduleId)
         {
             var subscription = _subscriptionRepository.GetSubscription(subscriptionId, false);
-            if (subscription != null && IsAuthorizedForDataRoom(subscription.DataRoomId, moduleId, PermissionNames.Edit))
+            if (subscription != null && IsAuthorizedForDataRoom(subscription.DataRoomId, moduleId, PermissionNames.View))
             {
                 _subscriptionRepository.DeleteSubscription(subscriptionId);
                 _logger.Log(LogLevel.Information, this, LogFunction.Delete, "Subscription Deleted {SubscriptionId}", subscriptionId);

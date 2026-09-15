@@ -12,6 +12,7 @@ namespace GIBS.Module.DataRoom.Startup
             services.AddScoped<IDataRoomService, ClientDataRoomService>();
             services.AddScoped<IDataRoomActivityLogService, ClientDataRoomActivityLogService>();
             services.AddScoped<IDataRoomSubscriptionService, ClientDataRoomSubscriptionService>();
+            services.AddScoped<IDataRoomSubscriptionEventService, ClientDataRoomSubscriptionEventService>();
 
             // Register localization with resource path for Italian and other cultures
             services.AddLocalization(options => options.ResourcesPath = "Resources");
