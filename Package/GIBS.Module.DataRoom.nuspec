@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <metadata>
         <id>$projectname$</id>
-        <version>1.2.4</version>
+        <version>1.2.5</version>
         <authors>GIBS</authors>
         <owners>GIBS</owners>
         <title>DataRoom</title>
@@ -28,6 +28,18 @@
         <file src="..\..\oqtane.framework\Oqtane.Server\bin\Release\$targetframework$\$ProjectName$.Shared.Oqtane.dll" target="lib\$targetframework$" />
         <file src="..\..\oqtane.framework\Oqtane.Server\bin\Release\$targetframework$\$ProjectName$.Shared.Oqtane.pdb" target="lib\$targetframework$" />
 
+      <!-- Localization satellite assemblies for de culture -->
+      <file src="..\..\oqtane.framework\Oqtane.Server\bin\Release\$targetframework$\de\$ProjectName$.Client.Oqtane.resources.dll" target="lib\$targetframework$\de" />
+      <!-- Localization satellite assemblies for de-DE culture -->
+      <file src="..\..\oqtane.framework\Oqtane.Server\bin\Release\$targetframework$\de-DE\$ProjectName$.Client.Oqtane.resources.dll" target="lib\$targetframework$\de-DE" />
+      <!-- Localization satellite assemblies for fr culture -->
+      <file src="..\..\oqtane.framework\Oqtane.Server\bin\Release\$targetframework$\fr\$ProjectName$.Client.Oqtane.resources.dll" target="lib\$targetframework$\fr" />
+      <!-- Localization satellite assemblies for fr-FR culture -->
+      <file src="..\..\oqtane.framework\Oqtane.Server\bin\Release\$targetframework$\fr-FR\$ProjectName$.Client.Oqtane.resources.dll" target="lib\$targetframework$\fr-FR" />
+      <!-- Localization satellite assemblies for es culture -->
+      <file src="..\..\oqtane.framework\Oqtane.Server\bin\Release\$targetframework$\es\$ProjectName$.Client.Oqtane.resources.dll" target="lib\$targetframework$\es" />
+      <!-- Localization satellite assemblies for es-ES culture -->
+      <file src="..\..\oqtane.framework\Oqtane.Server\bin\Release\$targetframework$\es-ES\$ProjectName$.Client.Oqtane.resources.dll" target="lib\$targetframework$\es-ES" />
       <!-- Localization satellite assemblies for it culture -->
       <file src="..\..\oqtane.framework\Oqtane.Server\bin\Release\$targetframework$\it\$ProjectName$.Client.Oqtane.resources.dll" target="lib\$targetframework$\it" />
       <!-- Localization satellite assemblies for it-IT culture -->
